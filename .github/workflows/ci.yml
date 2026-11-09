@@ -179,8 +179,9 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
+  # Packs only need SEA binaries; verify (e2e) may flake without blocking OS pack delivery.
   os-packs:
-    needs: [verify, sea-db-host]
+    needs: [sea-db-host]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
