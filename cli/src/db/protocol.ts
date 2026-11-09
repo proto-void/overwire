@@ -3,7 +3,12 @@ export const NATIVE_MESSAGE_MAX = 1024 * 1024;
 /** Leave headroom for JSON framing. */
 export const CHUNK_PAYLOAD_MAX = 900 * 1024;
 
-export const HOST_NAME = 'com.detour.db';
+/** Canonical Overwire native-messaging host (ADR-031 / plan 041). */
+export const HOST_NAME = 'com.overwire.db';
+/** Legacy Detour host — install dual-registers; keychain/connect fall back here. */
+export const LEGACY_HOST_NAME = 'com.detour.db';
+/** Both names written on install so Detour and Overwire brand builds can connect. */
+export const HOST_NAMES = [HOST_NAME, LEGACY_HOST_NAME] as const;
 export const HOST_VERSION = '0.1.0';
 /** Bump when breaking RPC shape; extension refuses mismatched helpers. */
 export const PROTOCOL_VERSION = 1;

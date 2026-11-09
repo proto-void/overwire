@@ -29,7 +29,7 @@ function loadJksJs(): JksJs {
     return require('jks-js') as JksJs;
   } catch {
     throw new Error(
-      'jks-js is required to read Java truststore/keystore files. From the repo root run: corepack pnpm --filter @detour/cli add jks-js',
+      'jks-js is required to read Java truststore/keystore files. From the repo root run: corepack pnpm --filter @overwire/cli add jks-js',
     );
   }
 }

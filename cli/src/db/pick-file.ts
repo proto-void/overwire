@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 import { platform } from 'node:os';
-import { helperInstallDir } from './helper-paths.ts';
+import { helperInstallDir, legacyHelperInstallDir } from './helper-paths.ts';
+import { envPickfileScpt } from './brand-env.ts';
 
 const defaultExecFile = promisify(execFile);
 
@@ -22,7 +23,7 @@ type PickFileDeps = {
   compiledScriptPath?: string | null;
   /** Override cached Linux dialog tool. */
   linuxDialog?: 'zenity' | 'kdialog' | null;
-  /** Executable path used to resolve sibling detour-pickfile (tests). */
+  /** Executable path used to resolve sibling overwire-pickfile (tests). */
   execPath?: string;
 };
 
@@ -40,8 +41,13 @@ export type PickFileOptions = {
 /** Compiled NSOpenPanel script name (Install Helper / SEA install). */
 export const COMPILED_NSOPEN_SCRIPT = 'pickfile-nsopen.scpt';
 
-/** Sibling binary for Windows native dialog (SEA packs). */
+/** Sibling binary for native file dialog (SEA packs). */
 export function pickfileBinaryName(os: NodeJS.Platform = platform()): string {
+  return os === 'win32' ? 'overwire-pickfile.exe' : 'overwire-pickfile';
+}
+
+/** Pre-rebrand sibling picker name (resolve fallback). */
+export function legacyPickfileBinaryName(os: NodeJS.Platform = platform()): string {
   return os === 'win32' ? 'detour-pickfile.exe' : 'detour-pickfile';
 }
 
@@ -126,10 +132,10 @@ export function windowsFilterString(filters?: PickFileFilter[]): string {
 
 /** Objective-C NSOpenPanel sibling — clang-compiled at install / SEA build (macOS). */
 export const DARWIN_NSOPEN_OBJC_SOURCE = `/*
- * detour-pickfile — native macOS NSOpenPanel for Databases Browse.
+ * overwire-pickfile — native macOS NSOpenPanel for Databases Browse.
  * Compiled at Install Helper time (clang -framework AppKit).
  *
- * Usage: detour-pickfile [-title string] [-filter name:ext1,ext2]...
+ * Usage: overwire-pickfile [-title string] [-filter name:ext1,ext2]...
  * Cancel → empty stdout, exit 0. Path → stdout. Failures → stderr + exit 1.
  *
  * Accessory activation + active-Space collection behavior so the panel overlays
@@ -180,7 +186,7 @@ int main(int argc, const char *argv[]) {
       } else if ([a hasPrefix:@"-filter="]) {
         [filterArgs addObject:[a substringFromIndex:8]];
       } else if ([a isEqualToString:@"-h"] || [a isEqualToString:@"--help"]) {
-        fputs("usage: detour-pickfile [-title string] [-filter name:ext1,ext2]...\\n",
+        fputs("usage: overwire-pickfile [-title string] [-filter name:ext1,ext2]...\\n",
               stderr);
         return 0;
       }
@@ -237,7 +243,7 @@ export const DARWIN_NSOPEN_SCRIPT_SOURCE = `use AppleScript version "2.4"
 use framework "AppKit"
 use scripting additions
 
--- Fallback when clang-built detour-pickfile is missing.
+-- Fallback when clang-built overwire-pickfile is missing.
 -- Accessory + active-Space collection behavior; light activateIgnoringOtherApps.
 -- Avoid Regular + ActivateAllWindows (switches Mission Control Spaces).
 on run argv
@@ -375,13 +381,13 @@ export function resolvePickfileBinary(
   os: NodeJS.Platform,
   execPath: string = process.execPath,
 ): string | null {
-  const name = pickfileBinaryName(os);
-  const candidates = [
-    join(dirname(execPath), name),
-    join(helperInstallDir(os), name),
-  ];
-  for (const p of candidates) {
-    if (existsSync(p)) return p;
+  const names = [pickfileBinaryName(os), legacyPickfileBinaryName(os)];
+  const dirs = [dirname(execPath), helperInstallDir(os), legacyHelperInstallDir(os)];
+  for (const dir of dirs) {
+    for (const name of names) {
+      const p = join(dir, name);
+      if (existsSync(p)) return p;
+    }
   }
   return null;
 }
@@ -391,13 +397,14 @@ export function resolveCompiledNSOpenScript(
   execPath: string = process.execPath,
 ): string | null {
   if (os !== 'darwin') return null;
-  if (process.env.DETOUR_PICKFILE_SCPT?.trim()) {
-    const p = process.env.DETOUR_PICKFILE_SCPT.trim();
-    return existsSync(p) ? p : null;
+  const envScpt = envPickfileScpt();
+  if (envScpt) {
+    return existsSync(envScpt) ? envScpt : null;
   }
   const candidates = [
     join(dirname(execPath), COMPILED_NSOPEN_SCRIPT),
     join(helperInstallDir(os), COMPILED_NSOPEN_SCRIPT),
+    join(legacyHelperInstallDir(os), COMPILED_NSOPEN_SCRIPT),
   ];
   for (const p of candidates) {
     if (existsSync(p)) return p;

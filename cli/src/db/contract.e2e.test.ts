@@ -1,12 +1,12 @@
 /**
  * Live adapter contract tests against docker-compose.db.yml.
- * Skipped unless DETOUR_DB_E2E=1.
+ * Skipped unless BRAND_DB_E2E=1 or DETOUR_DB_E2E=1.
  *
  *   docker compose -f docker-compose.db.yml up -d cassandra postgres mysql redis mongo
- *   DETOUR_DB_E2E=1 corepack pnpm --filter @detour/cli exec node --experimental-strip-types --test src/db/contract.e2e.test.ts
+ *   BRAND_DB_E2E=1 corepack pnpm --filter @overwire/cli exec node --experimental-strip-types --test src/db/contract.e2e.test.ts
  *
  * Portable host binary (any conforming native-messaging host, e.g. Go partner helper):
- *   DETOUR_DB_HOST_CMD=/path/to/binary corepack pnpm --filter @detour/cli exec node --experimental-strip-types --test src/db/contract.e2e.test.ts
+ *   BRAND_DB_HOST_CMD=/path/to/binary corepack pnpm --filter @overwire/cli exec node --experimental-strip-types --test src/db/contract.e2e.test.ts
  */
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -22,8 +22,8 @@ import {
   HOST_VERSION,
 } from './protocol.ts';
 
-const live = process.env.DETOUR_DB_E2E === '1';
-const hostCmd = process.env.DETOUR_DB_HOST_CMD?.trim();
+const live = process.env.BRAND_DB_E2E === '1' || process.env.DETOUR_DB_E2E === '1';
+const hostCmd = (process.env.BRAND_DB_HOST_CMD || process.env.DETOUR_DB_HOST_CMD || '').trim();
 
 describe('native messaging framing', () => {
   it('encodes and decodes length-prefixed messages', () => {

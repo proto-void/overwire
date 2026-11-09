@@ -38,22 +38,26 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: CLI tests
-        run: pnpm --filter @detour/cli test
+        run: pnpm --filter @overwire/cli test
 
       - name: CLI typecheck
-        run: pnpm --filter @detour/cli typecheck
+        run: pnpm --filter @overwire/cli typecheck
+
+      # wxt prepare writes .wxt/tsconfig.json; required after postinstall was removed.
+      - name: Prepare extension (wxt)
+        run: pnpm --filter @overwire/extension exec wxt prepare
 
       - name: Unit tests
-        run: pnpm --filter @detour/extension test
+        run: pnpm --filter @overwire/extension test
 
       - name: Typecheck
-        run: pnpm --filter @detour/extension typecheck
+        run: pnpm --filter @overwire/extension typecheck
 
       - name: Chrome build
-        run: pnpm --filter @detour/extension build
+        run: pnpm --filter @overwire/extension build
 
       - name: Firefox build
-        run: pnpm --filter @detour/extension build:firefox
+        run: pnpm --filter @overwire/extension build:firefox
 
       - name: Install Chrome for Testing
         working-directory: extension
@@ -77,7 +81,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: detour-packages
+          name: overwire-packages
           path: extension/.output/**/*.zip
           if-no-files-found: error
 
@@ -125,8 +129,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN=".sea/detour-db-host"
-          if [[ "${{ runner.os }}" == "Windows" ]]; then BIN=".sea/detour-db-host.exe"; fi
+          BIN=".sea/overwire-db-host"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then BIN=".sea/overwire-db-host.exe"; fi
           "$BIN" --version
           "$BIN" install --dry-run
           "$BIN" doctor || true
@@ -136,13 +140,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN=".sea/detour-db-host"
-          if [[ "${{ runner.os }}" == "Windows" ]]; then BIN=".sea/detour-db-host.exe"; fi
+          BIN=".sea/overwire-db-host"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then BIN=".sea/overwire-db-host.exe"; fi
           # One JSON-RPC ping framed for native messaging (4-byte LE length + UTF-8 JSON).
           node --input-type=module <<'EOF'
           import { spawn } from 'node:child_process';
           import { platform } from 'node:os';
-          const bin = platform() === 'win32' ? '.sea/detour-db-host.exe' : '.sea/detour-db-host';
+          const bin = platform() === 'win32' ? '.sea/overwire-db-host.exe' : '.sea/overwire-db-host';
           const child = spawn(bin, [], { stdio: ['pipe', 'pipe', 'inherit'] });
           const req = Buffer.from(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'version' }), 'utf8');
           const header = Buffer.alloc(4);
@@ -170,13 +174,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: detour-db-sea-${{ matrix.pack_os }}-${{ matrix.pack_arch }}
-          path: |
-            cli/.sea/**
+          name: overwire-db-sea-${{ matrix.pack_os }}-${{ matrix.pack_arch }}
+          path: cli/.sea
           if-no-files-found: error
+          include-hidden-files: true
 
+  # Packs only need SEA binaries; verify (e2e) may flake without blocking OS pack delivery.
   os-packs:
-    needs: [verify, sea-db-host]
+    needs: [sea-db-host]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -185,20 +190,20 @@ jobs:
         include:
           - pack_os: windows
             pack_arch: x64
-            sea_artifact: detour-db-sea-windows-x64
-            helper_bin: detour-db-host.exe
+            sea_artifact: overwire-db-sea-windows-x64
+            helper_bin: overwire-db-host.exe
           - pack_os: macos
             pack_arch: arm64
-            sea_artifact: detour-db-sea-macos-arm64
-            helper_bin: detour-db-host
+            sea_artifact: overwire-db-sea-macos-arm64
+            helper_bin: overwire-db-host
           - pack_os: macos
             pack_arch: x64
-            sea_artifact: detour-db-sea-macos-x64
-            helper_bin: detour-db-host
+            sea_artifact: overwire-db-sea-macos-x64
+            helper_bin: overwire-db-host
           - pack_os: linux
             pack_arch: x64
-            sea_artifact: detour-db-sea-linux-x64
-            helper_bin: detour-db-host
+            sea_artifact: overwire-db-sea-linux-x64
+            helper_bin: overwire-db-host
     steps:
       - uses: actions/checkout@v4
 
@@ -216,7 +221,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Chrome extension build
-        run: pnpm --filter @detour/extension build
+        run: pnpm --filter @overwire/extension build
 
       - uses: actions/download-artifact@v4
         with:
@@ -225,21 +230,24 @@ jobs:
 
       - name: Assemble OS pack
         env:
+          BRAND_PACK_OS: ${{ matrix.pack_os }}
+          BRAND_PACK_ARCH: ${{ matrix.pack_arch }}
           DETOUR_PACK_OS: ${{ matrix.pack_os }}
           DETOUR_PACK_ARCH: ${{ matrix.pack_arch }}
         run: |
           set -euo pipefail
           chmod +x "cli/.sea/${{ matrix.helper_bin }}" 2>/dev/null || true
           # pack:os runs with cwd=cli/; SEA artifact was downloaded to cli/.sea
-          pnpm --filter @detour/cli pack:os
+          pnpm --filter @overwire/cli pack:os
 
       - uses: actions/upload-artifact@v4
         with:
-          name: detour-os-pack-${{ matrix.pack_os }}-${{ matrix.pack_arch }}
+          name: overwire-os-pack-${{ matrix.pack_os }}-${{ matrix.pack_arch }}
           path: |
             cli/.packs/*.zip
             cli/.packs/*.tar.gz
           if-no-files-found: error
+          include-hidden-files: true
 
   release:
     needs: [verify, sea-db-host, os-packs]
@@ -250,12 +258,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: detour-packages
+          name: overwire-packages
           path: packages
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: detour-os-pack-*
+          pattern: overwire-os-pack-*
           path: os-packs
           merge-multiple: true
 
