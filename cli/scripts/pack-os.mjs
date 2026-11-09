@@ -2,13 +2,14 @@
 /**
  * Assemble a self-sufficient OS pack: extension + SEA helper + install scripts + READMEs.
  *
- *   corepack pnpm --filter @detour/cli pack:os
+ *   corepack pnpm --filter @overwire/cli pack:os
  *
- * Env:
- *   DETOUR_BRAND=detour (default; other slugs only if a matching brands/<slug> exists)
- *   DETOUR_PACK_OS / DETOUR_PACK_ARCH — override target labels (default: host)
- *   DETOUR_SEA_DIR — prebuilt .sea directory (default cli/.sea)
- *   DETOUR_EXT_DIR — prebuilt unpacked extension (default extension/.output/<brand>/chrome-mv3)
+ * Env (BRAND_* preferred; DETOUR_* still accepted):
+ *   BRAND / DETOUR_BRAND — extension brand slug for assets (default detour until cutover)
+ *   BRAND_PACK_OS / BRAND_PACK_ARCH — override target labels (default: host)
+ *   BRAND_SEA_DIR / BRAND_EXT_DIR — prebuilt SEA / extension dirs
+ *
+ * Pack archive name is always `overwire-<ver>-<os>-<arch>` (plan 041).
  */
 import {
   chmodSync,
@@ -33,42 +34,52 @@ const require = createRequire(import.meta.url);
 const cliRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = join(cliRoot, '..');
 
-const brand = (process.env.DETOUR_BRAND || 'detour').trim() || 'detour';
-const brandName = 'Detour';
+const brand = (process.env.BRAND || process.env.DETOUR_BRAND || 'detour').trim() || 'detour';
+const brandName = brand === 'overwire' ? 'Overwire' : brand === 'detour' ? 'Detour' : brand;
+const packProduct = 'overwire';
 const version = readExtVersion();
-const osKey = process.env.DETOUR_PACK_OS || mapOs(platform());
-const archKey = process.env.DETOUR_PACK_ARCH || mapArch(osArch());
-const slug = `${brand}-${version}-${osKey}-${archKey}`;
+const osKey = process.env.BRAND_PACK_OS || process.env.DETOUR_PACK_OS || mapOs(platform());
+const archKey = process.env.BRAND_PACK_ARCH || process.env.DETOUR_PACK_ARCH || mapArch(osArch());
+const slug = `${packProduct}-${version}-${osKey}-${archKey}`;
 const outRoot = join(cliRoot, '.packs', slug);
-const seaDir = process.env.DETOUR_SEA_DIR || join(cliRoot, '.sea');
+const seaDir =
+  process.env.BRAND_SEA_DIR ||
+  process.env.DETOUR_SEA_DIR ||
+  join(cliRoot, '.sea');
 const extDir =
+  process.env.BRAND_EXT_DIR ||
   process.env.DETOUR_EXT_DIR ||
   join(repoRoot, 'extension', '.output', brand, 'chrome-mv3');
 
 const isWin = osKey === 'windows';
-const helperBinary = isWin ? 'detour-db-host.exe' : 'detour-db-host';
+const helperBinary = isWin ? 'overwire-db-host.exe' : 'overwire-db-host';
 const installScript = isWin
-  ? 'Install Detour Helper.cmd'
+  ? 'Install Overwire Helper.cmd'
   : platform() === 'darwin' && osKey === 'macos'
-    ? 'Install Detour Helper.command'
+    ? 'Install Overwire Helper.command'
     : 'install.sh';
 const uninstallScript = isWin
-  ? 'Uninstall Detour Helper.cmd'
+  ? 'Uninstall Overwire Helper.cmd'
   : platform() === 'darwin' && osKey === 'macos'
-    ? 'Uninstall Detour Helper.command'
+    ? 'Uninstall Overwire Helper.command'
     : 'uninstall.sh';
 
-const releasesUrl = 'https://github.com/protovoid/detour/releases';
+const releasesUrl = 'https://github.com/proto-void/overwire/releases';
 const installDirExample = installDirFor(osKey);
 const firstRunNotes = firstRunFor(osKey);
 const osLabel = osLabelFor(osKey);
 
 if (!existsSync(join(seaDir, helperBinary))) {
-  console.error(`SEA binary missing at ${join(seaDir, helperBinary)}. Run sea:build first.`);
-  process.exit(1);
+  // Transition: accept legacy SEA binary name if present.
+  const legacy = isWin ? 'detour-db-host.exe' : 'detour-db-host';
+  if (!existsSync(join(seaDir, legacy))) {
+    console.error(`SEA binary missing at ${join(seaDir, helperBinary)}. Run sea:build first.`);
+    process.exit(1);
+  }
 }
+
 if (!existsSync(join(extDir, 'manifest.json'))) {
-  console.error(`Extension build missing at ${extDir}. Run: pnpm --filter @detour/extension build`);
+  console.error(`Extension build missing at ${extDir}. Run: pnpm --filter @overwire/extension build`);
   process.exit(1);
 }
 
@@ -83,10 +94,19 @@ copyFileSync(
 
 const helperOut = join(outRoot, 'helper');
 mkdirSync(helperOut, { recursive: true });
-cpSync(join(seaDir, helperBinary), join(helperOut, helperBinary));
-const pickfileBinary = isWin ? 'detour-pickfile.exe' : 'detour-pickfile';
-if (existsSync(join(seaDir, pickfileBinary))) {
-  cpSync(join(seaDir, pickfileBinary), join(helperOut, pickfileBinary));
+const seaHelperSrc = existsSync(join(seaDir, helperBinary))
+  ? join(seaDir, helperBinary)
+  : join(seaDir, isWin ? 'detour-db-host.exe' : 'detour-db-host');
+cpSync(seaHelperSrc, join(helperOut, helperBinary));
+const pickfileBinary = isWin ? 'overwire-pickfile.exe' : 'overwire-pickfile';
+const legacyPick = isWin ? 'detour-pickfile.exe' : 'detour-pickfile';
+const pickSrc = existsSync(join(seaDir, pickfileBinary))
+  ? join(seaDir, pickfileBinary)
+  : existsSync(join(seaDir, legacyPick))
+    ? join(seaDir, legacyPick)
+    : null;
+if (pickSrc) {
+  cpSync(pickSrc, join(helperOut, pickfileBinary));
   if (!isWin) {
     try {
       chmodSync(join(helperOut, pickfileBinary), 0o755);
@@ -104,7 +124,7 @@ if (existsSync(join(seaDir, 'package.json'))) {
 } else {
   writeFileSync(
     join(helperOut, 'package.json'),
-    `${JSON.stringify({ name: 'detour-db-host', private: true }, null, 2)}\n`,
+    `${JSON.stringify({ name: 'overwire-db-host', private: true }, null, 2)}\n`,
   );
 }
 if (!isWin) {
@@ -116,7 +136,7 @@ if (!isWin) {
 }
 
 const vars = {
-  brandName,
+  brandName: 'Overwire',
   version,
   osLabel,
   arch: archKey,
@@ -172,9 +192,9 @@ function osLabelFor(os) {
 }
 
 function installDirFor(os) {
-  if (os === 'macos') return '~/Library/Application Support/Detour/db-host/';
-  if (os === 'windows') return '%LOCALAPPDATA%\\Detour\\db-host\\';
-  return '${XDG_DATA_HOME:-~/.local/share}/detour/db-host/';
+  if (os === 'macos') return '~/Library/Application Support/Overwire/db-host/';
+  if (os === 'windows') return '%LOCALAPPDATA%\\Overwire\\db-host\\';
+  return '${XDG_DATA_HOME:-~/.local/share}/overwire/db-host/';
 }
 
 function firstRunFor(os) {
@@ -191,7 +211,7 @@ function firstRunFor(os) {
     ].join('\n');
   }
   return [
-    '**Linux:** if the install script is not executable after unzip, run `chmod +x install.sh uninstall.sh helper/detour-db-host`.',
+    '**Linux:** if the install script is not executable after unzip, run `chmod +x install.sh uninstall.sh helper/overwire-db-host`.',
   ].join('\n');
 }
 
@@ -216,7 +236,7 @@ function assertNoPlaceholders(dir) {
 }
 
 function writeInstallScripts(root, opts) {
-  const { isWin, helperBinary, installScript, uninstallScript, brand } = opts;
+  const { isWin, helperBinary, installScript, uninstallScript } = opts;
   const brandFlag = '';
   if (isWin) {
     writeFileSync(

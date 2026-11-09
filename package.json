@@ -1,5 +1,5 @@
 {
-  "name": "detour",
+  "name": "overwire",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@12.9.1",
@@ -7,7 +7,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
-    "pack:os": "corepack pnpm --filter @detour/cli pack:os",
+    "pack:os": "corepack pnpm --filter @overwire/cli pack:os",
     "bump": "node bump-version.mjs"
   },
   "version": "0.1.2"

@@ -31,7 +31,7 @@ export type DbInstallArgs = {
   extensionId?: string;
   firefox: boolean;
   dryRun: boolean;
-  brand: 'detour';
+  brand: 'detour' | 'overwire';
   /** Prefer SEA self-install when running as SEA (or --sea). */
   sea: boolean;
 };
@@ -51,11 +51,12 @@ export type ParsedArgs =
   | { error: string };
 
 /**
- * `detour bridge <folder> [--port 47321]`
- * `detour db install [--extension-id=…] [--no-firefox] [--dry-run] [--brand=detour]`
- * `detour db uninstall`
- * `detour db doctor`
- * `detour db-host-stdio` (native messaging entry; also via launcher)
+ * `overwire bridge <folder> [--port 47321]`
+ * `overwire db install [--extension-id=…] [--no-firefox] [--dry-run] [--brand=detour|overwire]`
+ * `overwire db uninstall`
+ * `overwire db doctor`
+ * `overwire db-host-stdio` (native messaging entry; also via launcher)
+ * Transition: `detour` bin still works for one release.
  *
  * SEA binary also accepts top-level: install | uninstall | doctor | --version
  */
@@ -108,7 +109,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg === '--port' || arg.startsWith('--port=')) {
       const value = arg.startsWith('--port=') ? arg.slice('--port='.length) : rest[++i];
-      if (value === undefined || !/^[0-9]+$/.test(value)) return { error: 'Usage: detour bridge <folder> [--port 47321]' };
+      if (value === undefined || !/^[0-9]+$/.test(value)) return { error: 'Usage: overwire bridge <folder> [--port 47321]' };
       port = Number(value);
       if (port < 1 || port > 65535) return { error: 'Port must be between 1 and 65535.' };
       continue;
@@ -135,7 +136,7 @@ function parseDbInstall(
   let extensionId: string | undefined;
   let firefox = true;
   let dryRun = false;
-  let brand: 'detour' = 'detour';
+  let brand: 'detour' | 'overwire' = 'detour';
   let sea = opts?.seaDefault === true || isRunningAsSea();
   for (const arg of args) {
     if (arg.startsWith('--extension-id=')) extensionId = arg.slice('--extension-id='.length);
@@ -144,7 +145,9 @@ function parseDbInstall(
     else if (arg === '--sea') sea = true;
     else if (arg.startsWith('--brand=')) {
       const b = arg.slice('--brand='.length);
-      if (b !== 'detour') return { error: `Unknown brand "${b}". Use detour.` };
+      if (b !== 'detour' && b !== 'overwire') {
+        return { error: `Unknown brand "${b}". Use detour or overwire.` };
+      }
       brand = b;
     } else if (arg === '--help' || arg === '-h') return { error: usage() };
     else return { error: `Unknown option "${arg}".\n${usage()}` };
@@ -155,25 +158,26 @@ function parseDbInstall(
 export function usage(): string {
   return [
     'Usage:',
-    '  detour bridge <folder> [--port 47321]',
-    '  detour db install [--extension-id=<id>] [--no-firefox] [--dry-run] [--brand=detour]',
-    '  detour db uninstall',
-    '  detour db doctor',
-    '  detour-db-host install | uninstall | doctor | --version   (SEA pack helper)',
+    '  overwire bridge <folder> [--port 47321]',
+    '  overwire db install [--extension-id=<id>] [--no-firefox] [--dry-run] [--brand=detour|overwire]',
+    '  overwire db uninstall',
+    '  overwire db doctor',
+    '  overwire-db-host install | uninstall | doctor | --version   (SEA pack helper)',
+    '  detour …   (transition alias → overwire)',
     '',
     'Local Bridge serves a folder on 127.0.0.1 for serve-local rules.',
-    `db install registers the ${HOST_NAME} native messaging host for the Databases tab.`,
-    'OS packs: run Install Detour Helper (no Node required). Developers may still use db install from the repo.',
+    `db install registers ${HOST_NAME} (and legacy com.detour.db) for the Databases tab.`,
+    'OS packs: run Install Overwire Helper (no Node required). Developers may still use db install from the repo.',
   ].join('\n');
 }
 
 export function banner(port: number, rootLabel: string, token: string): string {
   return [
-    'Detour bridge',
+    'Overwire bridge',
     `  http://127.0.0.1:${port}`,
     `  folder: ${rootLabel}`,
     `  token: ${token}`,
-    'Connect this token on the Detour rules page. It changes every time you start the bridge.',
+    'Connect this token on the Overwire rules page. It changes every time you start the bridge.',
   ].join('\n');
 }
 
@@ -195,7 +199,7 @@ async function runDbInstall(args: DbInstallArgs): Promise<void> {
         os,
         dryRun: args.dryRun,
       });
-      console.log(`Detour DB helper install dir: ${result.installDir}`);
+      console.log(`Overwire DB helper install dir: ${result.installDir}`);
       console.log(`Host binary: ${result.hostPath}`);
       if (result.written.length === 0 && !args.dryRun) {
         console.log('No manifests written.');
@@ -205,7 +209,7 @@ async function runDbInstall(args: DbInstallArgs): Promise<void> {
       }
       for (const n of result.notes) console.log(`Note: ${n}`);
       if (!args.dryRun) {
-        console.log('Open Detour → Databases. Click Start — you should see Helper: Ready.');
+        console.log('Open Overwire → Databases. Click Start — you should see Helper: Ready.');
       }
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
@@ -218,7 +222,7 @@ async function runDbInstall(args: DbInstallArgs): Promise<void> {
   const nodePath = resolveNodePath();
   if (!existsSync(nodePath)) {
     console.error(
-      `detour db install: Node binary not found at ${nodePath}. Install Node, then re-run db install with that Node on PATH (or via the absolute path you use day-to-day).`,
+      `overwire db install: Node binary not found at ${nodePath}. Install Node, then re-run db install with that Node on PATH (or via the absolute path you use day-to-day).`,
     );
     process.exitCode = 1;
     return;
@@ -243,7 +247,7 @@ async function runDbInstall(args: DbInstallArgs): Promise<void> {
     os,
     dryRun: args.dryRun,
   });
-  console.log(`Detour DB host launcher: ${launcher}`);
+  console.log(`Overwire DB host launcher: ${launcher}`);
   console.log(`Node (embedded): ${nodePath}`);
   if (written.length === 0 && !args.dryRun) {
     console.log('No manifests written.');
@@ -253,7 +257,7 @@ async function runDbInstall(args: DbInstallArgs): Promise<void> {
   }
   for (const n of notes) console.log(`Note: ${n}`);
   if (!args.dryRun) {
-    console.log('Open Detour → Databases. The tab should show Helper: Ready after reload.');
+    console.log('Open Overwire → Databases. The tab should show Helper: Ready after reload.');
   }
 }
 
@@ -266,13 +270,13 @@ async function main(): Promise<void> {
   }
 
   if (parsed.command === 'version') {
-    console.log(`detour-db-host ${HOST_VERSION}`);
+    console.log(`overwire-db-host ${HOST_VERSION}`);
     return;
   }
 
   if (parsed.command === 'db-doctor') {
     const report = doctorHost();
-    console.log(`Detour DB helper doctor v${report.version}`);
+    console.log(`Overwire DB helper doctor v${report.version}`);
     console.log(`  host: ${report.hostName}`);
     console.log(`  installDir: ${report.installDir}`);
     console.log(`  binary: ${report.hostPath} (${report.hostExists ? 'present' : 'MISSING'})`);

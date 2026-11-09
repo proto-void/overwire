@@ -2,4 +2,7 @@ packages:
   - extension
   - cli
 allowBuilds:
+  cpu-features: true
   esbuild: true
+  oracledb: true
+  ssh2: true

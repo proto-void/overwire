@@ -13,14 +13,19 @@ import {
 import { dirname, join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { defaultChromiumExtensionIds, isChromiumExtensionId } from './extension-ids.ts';
-import { helperBinaryName, helperInstallDir } from './helper-paths.ts';
+import {
+  helperBinaryName,
+  helperInstallDir,
+  legacyHelperBinaryName,
+  legacyHelperInstallDir,
+} from './helper-paths.ts';
 import {
   COMPILED_NSOPEN_SCRIPT,
   DARWIN_NSOPEN_OBJC_SOURCE,
   DARWIN_NSOPEN_SCRIPT_SOURCE,
   pickfileBinaryName,
 } from './pick-file.ts';
-import { HOST_NAME, HOST_VERSION } from './protocol.ts';
+import { HOST_NAME, HOST_NAMES, HOST_VERSION, LEGACY_HOST_NAME } from './protocol.ts';
 
 export type OsPlatform = NodeJS.Platform;
 
@@ -47,8 +52,15 @@ function sleepMs(ms: number): void {
 
 /** Best-effort stop of Chrome-held helper binaries before Windows replace. */
 export function stopHelperProcesses(os: OsPlatform = platform()): void {
+  const winImages = [
+    'overwire-db-host.exe',
+    'overwire-pickfile.exe',
+    'detour-db-host.exe',
+    'detour-pickfile.exe',
+  ];
+  const posixNames = ['overwire-db-host', 'overwire-pickfile', 'detour-db-host', 'detour-pickfile'];
   if (os === 'win32') {
-    for (const image of ['detour-db-host.exe', 'detour-pickfile.exe']) {
+    for (const image of winImages) {
       try {
         execFileSync('taskkill', ['/IM', image, '/T'], { stdio: 'ignore' });
       } catch {
@@ -63,7 +75,7 @@ export function stopHelperProcesses(os: OsPlatform = platform()): void {
     sleepMs(200);
     return;
   }
-  for (const name of ['detour-db-host', 'detour-pickfile']) {
+  for (const name of posixNames) {
     try {
       execFileSync('pkill', ['-x', name], { stdio: 'ignore' });
     } catch {
@@ -71,7 +83,7 @@ export function stopHelperProcesses(os: OsPlatform = platform()): void {
     }
   }
   sleepMs(150);
-  for (const name of ['detour-db-host', 'detour-pickfile']) {
+  for (const name of posixNames) {
     try {
       execFileSync('pkill', ['-9', '-x', name], { stdio: 'ignore' });
     } catch {
@@ -102,7 +114,7 @@ export function copyReplaceBinary(src: string, dst: string, os: OsPlatform = pla
   }
   throw new Error(
     `Cannot replace ${dst}: file is locked (${last instanceof Error ? last.message : String(last)}). ` +
-      'Stop the helper in Detour → Databases (or close Chrome so the native host exits), then retry.',
+      'Stop the helper in Overwire → Databases (or close Chrome so the native host exits), then retry.',
   );
 }
 
@@ -165,7 +177,7 @@ export const stableNodePath = resolveNodePath;
 
 /** Manifest `path` / on-disk launcher basename for this OS. */
 export function hostLauncherFileName(os: OsPlatform = platform()): string {
-  return os === 'win32' ? 'detour-db-host.cmd' : 'detour-db-host';
+  return os === 'win32' ? 'overwire-db-host.cmd' : 'overwire-db-host';
 }
 
 export type InstallOptions = {
@@ -177,7 +189,7 @@ export type InstallOptions = {
   /** Extra / full list of Chromium ids (merged with extensionId and defaults). */
   extensionIds?: string[];
   /** Brand defaults for allowed_origins when no ids passed. */
-  brand?: 'detour';
+  brand?: 'detour' | 'overwire';
   /** Absolute path to the host launcher script or SEA binary. */
   hostPath: string;
   /** Also register Firefox with gecko id. */
@@ -192,7 +204,7 @@ export type InstallOptions = {
 export function resolveChromiumExtensionIds(options: {
   extensionId?: string;
   extensionIds?: string[];
-  brand?: 'detour';
+  brand?: 'detour' | 'overwire';
 }): string[] {
   const out: string[] = [];
   const push = (id: string | undefined) => {
@@ -200,7 +212,9 @@ export function resolveChromiumExtensionIds(options: {
     if (!t || !isChromiumExtensionId(t) || out.includes(t)) return;
     out.push(t);
   };
-  for (const id of defaultChromiumExtensionIds(options.brand ?? 'detour')) push(id);
+  // Same Chromium ids for detour + overwire (in-place CWS upgrade).
+  for (const id of defaultChromiumExtensionIds(options.brand === 'overwire' ? 'detour' : (options.brand ?? 'detour')))
+    push(id);
   for (const id of options.extensionIds ?? []) push(id);
   push(options.extensionId);
   return out;
@@ -250,7 +264,7 @@ export function chromeManifestDirs(os: OsPlatform = platform()): string[] {
   }
   if (os === 'win32') {
     // Registry default value points at this JSON; path must be absolute and exist.
-    return [join(windowsLocalAppData(), 'Detour', 'NativeMessagingHosts')];
+    return [join(windowsLocalAppData(), 'Overwire', 'NativeMessagingHosts')];
   }
   return [];
 }
@@ -275,11 +289,11 @@ export function chromeAllowedOrigins(extensionIds: string[]): string[] {
   return extensionIds.map((id) => `chrome-extension://${id}/`);
 }
 
-function chromeManifest(hostPath: string, extensionIds: string[]): string {
+function chromeManifest(hostName: string, hostPath: string, extensionIds: string[]): string {
   return `${JSON.stringify(
     {
-      name: HOST_NAME,
-      description: `Detour database helper v${HOST_VERSION}`,
+      name: hostName,
+      description: `Overwire database helper v${HOST_VERSION}`,
       path: hostPath,
       type: 'stdio',
       allowed_origins: chromeAllowedOrigins(extensionIds),
@@ -289,11 +303,11 @@ function chromeManifest(hostPath: string, extensionIds: string[]): string {
   )}\n`;
 }
 
-function firefoxManifest(hostPath: string): string {
+function firefoxManifest(hostName: string, hostPath: string): string {
   return `${JSON.stringify(
     {
-      name: HOST_NAME,
-      description: `Detour database helper v${HOST_VERSION}`,
+      name: hostName,
+      description: `Overwire database helper v${HOST_VERSION}`,
       path: hostPath,
       type: 'stdio',
       allowed_extensions: [FIREFOX_GECKO_ID],
@@ -321,8 +335,8 @@ export type WriteLauncherOptions = {
 /**
  * Write the stdio host launcher browsers exec when Databases connects.
  * Embeds an absolute Node path so GUI Chrome/Edge/Firefox (minimal PATH) still find Node.
- * - darwin / linux: bash script (`detour-db-host`)
- * - win32: `.cmd` batch (`detour-db-host.cmd`) — Chrome requires .exe or .bat/.cmd, not a shebang
+ * - darwin / linux: bash script (`overwire-db-host`)
+ * - win32: `.cmd` batch (`overwire-db-host.cmd`) — Chrome requires .exe or .bat/.cmd, not a shebang
  */
 export function writeHostLauncher(
   outPath: string,
@@ -340,12 +354,12 @@ export function writeHostLauncher(
 
   if (os === 'win32') {
     const body = `@echo off
-REM Detour DB native messaging host launcher (dev / npx install)
+REM Overwire DB native messaging host launcher (dev / npx install)
 REM Absolute node path — GUI browsers inherit a minimal PATH without Node.
 set "NODE=${cmdSetQuote(nodePath)}"
 set "ENTRY=${cmdSetQuote(entryTs)}"
 if not exist "%NODE%" (
-  echo detour-db-host: node not found: %NODE% 1>&2
+  echo overwire-db-host: node not found: %NODE% 1>&2
   exit /b 127
 )
 "%NODE%" --experimental-strip-types "%ENTRY%" db-host-stdio
@@ -355,12 +369,12 @@ if not exist "%NODE%" (
   }
 
   const body = `#!/usr/bin/env bash
-# Detour DB native messaging host launcher (dev / npx install)
+# Overwire DB native messaging host launcher (dev / npx install)
 # Absolute node path — GUI browsers inherit a minimal PATH without Node.
 NODE=${shellQuote(nodePath)}
 ENTRY=${shellQuote(entryTs)}
 if [ ! -x "$NODE" ]; then
-  echo "detour-db-host: node not executable: $NODE" >&2
+  echo "overwire-db-host: node not executable: $NODE" >&2
   exit 127
 fi
 exec "$NODE" --experimental-strip-types "$ENTRY" db-host-stdio
@@ -368,24 +382,29 @@ exec "$NODE" --experimental-strip-types "$ENTRY" db-host-stdio
   writeFileSync(outPath, body, { mode: 0o755 });
 }
 
-/** Windows HKCU keys Chromium-family browsers read for native hosts. */
-export function windowsChromiumNativeMessagingRegKeys(): string[] {
+/** Windows HKCU keys Chromium-family browsers read for native hosts (both Overwire + legacy Detour). */
+export function windowsChromiumNativeMessagingRegKeys(hostName: string = HOST_NAME): string[] {
   return [
-    `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}`,
-    `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${HOST_NAME}`,
-    `HKCU\\Software\\BraveSoftware\\Brave\\NativeMessagingHosts\\${HOST_NAME}`,
-    `HKCU\\Software\\Chromium\\NativeMessagingHosts\\${HOST_NAME}`,
+    `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${hostName}`,
+    `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${hostName}`,
+    `HKCU\\Software\\BraveSoftware\\Brave\\NativeMessagingHosts\\${hostName}`,
+    `HKCU\\Software\\Chromium\\NativeMessagingHosts\\${hostName}`,
   ];
 }
 
 /** Windows HKCU key Firefox reads for native hosts (JSON must use allowed_extensions). */
-export function windowsFirefoxNativeMessagingRegKey(): string {
-  return `HKCU\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}`;
+export function windowsFirefoxNativeMessagingRegKey(hostName: string = HOST_NAME): string {
+  return `HKCU\\Software\\Mozilla\\NativeMessagingHosts\\${hostName}`;
 }
 
-/** All Windows native-messaging registry keys (Chromium + Firefox) for uninstall. */
+/** All Windows native-messaging registry keys (Chromium + Firefox, both host names) for uninstall. */
 export function windowsNativeMessagingRegKeys(): string[] {
-  return [...windowsChromiumNativeMessagingRegKeys(), windowsFirefoxNativeMessagingRegKey()];
+  const keys: string[] = [];
+  for (const hostName of HOST_NAMES) {
+    keys.push(...windowsChromiumNativeMessagingRegKeys(hostName));
+    keys.push(windowsFirefoxNativeMessagingRegKey(hostName));
+  }
+  return keys;
 }
 
 function registerWindowsRegistryKey(key: string, manifestPath: string): string | undefined {
@@ -399,9 +418,9 @@ function registerWindowsRegistryKey(key: string, manifestPath: string): string |
   }
 }
 
-function registerWindowsChromiumRegistry(manifestPath: string): string[] {
+function registerWindowsChromiumRegistry(hostName: string, manifestPath: string): string[] {
   const notes: string[] = [];
-  for (const key of windowsChromiumNativeMessagingRegKeys()) {
+  for (const key of windowsChromiumNativeMessagingRegKeys(hostName)) {
     const err = registerWindowsRegistryKey(key, manifestPath);
     if (err) notes.push(err);
   }
@@ -431,63 +450,67 @@ export function installHost(options: InstallOptions): { written: string[]; notes
     );
   }
 
-  let primaryChromeManifest: string | undefined;
-  let firefoxManifestPath: string | undefined;
+  const chromeByHost = new Map<string, string>();
+  const firefoxByHost = new Map<string, string>();
 
   if (options.dryRun) {
     notes.push(
-      `dry-run: would register host path ${options.hostPath} for ids: ${extensionIds.join(', ') || '(none)'}`,
+      `dry-run: would register host path ${options.hostPath} as ${HOST_NAMES.join(' + ')} for ids: ${extensionIds.join(', ') || '(none)'}`,
     );
     return { written, notes };
   }
 
   if (extensionIds.length > 0) {
-    for (const dir of chromeManifestDirs(os)) {
-      try {
-        mkdirSync(dir, { recursive: true });
-        const file = join(dir, `${HOST_NAME}.json`);
-        writeFileSync(file, chromeManifest(options.hostPath, extensionIds));
-        written.push(file);
-        primaryChromeManifest ??= file;
-      } catch (e) {
-        notes.push(`Skipped ${dir}: ${e instanceof Error ? e.message : String(e)}`);
+    for (const hostName of HOST_NAMES) {
+      for (const dir of chromeManifestDirs(os)) {
+        try {
+          mkdirSync(dir, { recursive: true });
+          const file = join(dir, `${hostName}.json`);
+          writeFileSync(file, chromeManifest(hostName, options.hostPath, extensionIds));
+          written.push(file);
+          chromeByHost.set(hostName, file);
+        } catch (e) {
+          notes.push(`Skipped ${dir}: ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
     }
   }
 
   if (options.firefox !== false) {
-    try {
-      const dir = firefoxManifestDir(os);
-      mkdirSync(dir, { recursive: true });
-      const file = join(dir, `${HOST_NAME}.json`);
-      writeFileSync(file, firefoxManifest(options.hostPath));
-      written.push(file);
-      firefoxManifestPath = file;
-    } catch (e) {
-      notes.push(`Firefox manifest: ${e instanceof Error ? e.message : String(e)}`);
+    for (const hostName of HOST_NAMES) {
+      try {
+        const dir = firefoxManifestDir(os);
+        mkdirSync(dir, { recursive: true });
+        const file = join(dir, `${hostName}.json`);
+        writeFileSync(file, firefoxManifest(hostName, options.hostPath));
+        written.push(file);
+        firefoxByHost.set(hostName, file);
+      } catch (e) {
+        notes.push(`Firefox manifest (${hostName}): ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
   }
 
   if (os === 'win32') {
-    if (primaryChromeManifest) {
-      notes.push(...registerWindowsChromiumRegistry(primaryChromeManifest));
-      notes.push(
-        `Windows Chromium registry keys for ${HOST_NAME} point at ${primaryChromeManifest}.`,
-      );
+    if (chromeByHost.size > 0) {
+      for (const [hostName, manifestPath] of chromeByHost) {
+        notes.push(...registerWindowsChromiumRegistry(hostName, manifestPath));
+        notes.push(`Windows Chromium registry keys for ${hostName} point at ${manifestPath}.`);
+      }
     } else {
       notes.push(
-        'On Windows, Chromium browsers need HKCU\\…\\NativeMessagingHosts\\com.detour.db → JSON path.',
+        `On Windows, Chromium browsers need HKCU\\…\\NativeMessagingHosts\\${HOST_NAME} (and legacy ${LEGACY_HOST_NAME}) → JSON path.`,
       );
     }
-    if (firefoxManifestPath) {
+    for (const [hostName, firefoxManifestPath] of firefoxByHost) {
       const ffErr = registerWindowsRegistryKey(
-        windowsFirefoxNativeMessagingRegKey(),
+        windowsFirefoxNativeMessagingRegKey(hostName),
         firefoxManifestPath,
       );
       if (ffErr) notes.push(ffErr);
       else {
         notes.push(
-          `Windows Firefox registry key for ${HOST_NAME} points at ${firefoxManifestPath}.`,
+          `Windows Firefox registry key for ${hostName} points at ${firefoxManifestPath}.`,
         );
       }
     }
@@ -516,7 +539,7 @@ export type SeaInstallOptions = {
   sourceDir: string;
   extensionId?: string;
   extensionIds?: string[];
-  brand?: 'detour';
+  brand?: 'detour' | 'overwire';
   firefox?: boolean;
   os?: OsPlatform;
   dryRun?: boolean;
@@ -553,18 +576,19 @@ export function installSeaHelper(options: SeaInstallOptions): {
 
   mkdirSync(installDir, { recursive: true });
   const srcBin = join(options.sourceDir, binName);
-  if (!existsSync(srcBin)) {
-    // Allow running install from an already-named binary path (sourceDir = dirname(execPath)).
-    const alt = join(options.sourceDir, os === 'win32' ? 'detour-db-host.exe' : 'detour-db-host');
-    if (!existsSync(alt) && existsSync(join(options.sourceDir, '..'))) {
-      notes.push(`SEA binary not found at ${srcBin}`);
-    }
+  const legacyBin = join(options.sourceDir, legacyHelperBinaryName(os));
+  if (!existsSync(srcBin) && !existsSync(legacyBin) && existsSync(join(options.sourceDir, '..'))) {
+    notes.push(`SEA binary not found at ${srcBin}`);
   }
-  const fromBin = existsSync(srcBin) ? srcBin : join(options.sourceDir, binName);
+  const fromBin = existsSync(srcBin) ? srcBin : existsSync(legacyBin) ? legacyBin : join(options.sourceDir, binName);
   if (!existsSync(fromBin)) {
     // When execPath itself is the binary, copy process.execPath
     const execCandidate = process.execPath;
-    if (dirname(execCandidate) === options.sourceDir || execCandidate.endsWith(binName)) {
+    if (
+      dirname(execCandidate) === options.sourceDir ||
+      execCandidate.endsWith(binName) ||
+      execCandidate.endsWith(legacyHelperBinaryName(os))
+    ) {
       copyReplaceBinary(execCandidate, hostPath, os);
     } else {
       throw new Error(`SEA binary not found in ${options.sourceDir} (expected ${binName})`);
@@ -590,7 +614,7 @@ export function installSeaHelper(options: SeaInstallOptions): {
   if (existsSync(pkgJson)) {
     cpSync(pkgJson, join(installDir, 'package.json'));
   } else {
-    writeFileSync(join(installDir, 'package.json'), `${JSON.stringify({ name: 'detour-db-host', private: true }, null, 2)}\n`);
+    writeFileSync(join(installDir, 'package.json'), `${JSON.stringify({ name: 'overwire-db-host', private: true }, null, 2)}\n`);
   }
 
   // Sibling native picker (Windows Go / macOS Cocoa). Optional — dialog fallbacks if absent.
@@ -631,7 +655,7 @@ export function installSeaHelper(options: SeaInstallOptions): {
   return { installDir, hostPath, written, notes };
 }
 
-/** clang-build Cocoa detour-pickfile into installDir (macOS Browse modal path). */
+/** clang-build Cocoa overwire-pickfile into installDir (macOS Browse modal path). */
 export function compileNativePickfileBinary(installDir: string): string[] {
   const notes: string[] = [];
   const srcPath = join(installDir, 'pickfile-nsopen.m');
@@ -684,8 +708,8 @@ export function compileNSOpenPickScript(installDir: string): string[] {
 export function removeSeaHelperFiles(os: OsPlatform = platform()): { removed: string[]; notes: string[] } {
   const removed: string[] = [];
   const notes: string[] = [];
-  const dir = helperInstallDir(os);
-  if (existsSync(dir)) {
+  for (const dir of [helperInstallDir(os), legacyHelperInstallDir(os)]) {
+    if (!existsSync(dir)) continue;
     try {
       rmSync(dir, { recursive: true, force: true });
       removed.push(dir);
@@ -710,20 +734,35 @@ export type DoctorReport = {
 export function doctorHost(os: OsPlatform = platform()): DoctorReport {
   const installDir = helperInstallDir(os);
   const hostPath = join(installDir, helperBinaryName(os));
+  const legacyPath = join(legacyHelperInstallDir(os), legacyHelperBinaryName(os));
   const notes: string[] = [];
-  const manifestPaths = [...chromeManifestDirs(os), firefoxManifestDir(os)].map((d) => {
-    const path = join(d, `${HOST_NAME}.json`);
-    return { path, exists: existsSync(path) };
-  });
-  const hostExists = existsSync(hostPath);
-  if (!hostExists) notes.push(`Helper binary missing at ${hostPath}. Run install from your Detour pack.`);
+  const manifestPaths: { path: string; exists: boolean }[] = [];
+  for (const hostName of HOST_NAMES) {
+    for (const d of [...chromeManifestDirs(os), firefoxManifestDir(os)]) {
+      const path = join(d, `${hostName}.json`);
+      manifestPaths.push({ path, exists: existsSync(path) });
+    }
+  }
+  // Also surface legacy Windows Detour NM JSON if still present.
+  if (os === 'win32') {
+    const legacyNm = join(windowsLocalAppData(), 'Detour', 'NativeMessagingHosts');
+    for (const hostName of HOST_NAMES) {
+      const path = join(legacyNm, `${hostName}.json`);
+      manifestPaths.push({ path, exists: existsSync(path) });
+    }
+  }
+  const hostExists = existsSync(hostPath) || existsSync(legacyPath);
+  if (!existsSync(hostPath) && existsSync(legacyPath)) {
+    notes.push(`Using legacy helper at ${legacyPath}. Re-run Install Overwire Helper to upgrade.`);
+  }
+  if (!hostExists) notes.push(`Helper binary missing at ${hostPath}. Run install from your Overwire pack.`);
   const anyManifest = manifestPaths.some((m) => m.exists);
   if (!anyManifest) notes.push('No native-messaging manifests found. Run install.');
   return {
     version: HOST_VERSION,
     hostName: HOST_NAME,
     installDir,
-    hostPath,
+    hostPath: existsSync(hostPath) ? hostPath : legacyPath,
     hostExists,
     manifestPaths,
     ok: hostExists && anyManifest,
@@ -734,9 +773,11 @@ export function doctorHost(os: OsPlatform = platform()): DoctorReport {
 export function uninstallHost(os: OsPlatform = platform()): { removed: string[]; notes: string[] } {
   const removed: string[] = [];
   const notes: string[] = [];
-  const candidates = [...chromeManifestDirs(os), firefoxManifestDir(os)].map((d) =>
-    join(d, `${HOST_NAME}.json`),
-  );
+  const dirs = [...chromeManifestDirs(os), firefoxManifestDir(os)];
+  if (os === 'win32') {
+    dirs.push(join(windowsLocalAppData(), 'Detour', 'NativeMessagingHosts'));
+  }
+  const candidates = dirs.flatMap((d) => HOST_NAMES.map((hostName) => join(d, `${hostName}.json`)));
   for (const file of candidates) {
     if (existsSync(file)) {
       try {
