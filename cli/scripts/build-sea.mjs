@@ -57,8 +57,11 @@ await build({
   format: 'cjs',
   outfile: entryBundle,
   // Avoid import.meta.url paths for packageRoot in SEA — define a sentinel.
+  // Windows requires a drive letter in file URLs (file:///C:/...).
   define: {
-    'import.meta.url': JSON.stringify('file:///detour-sea/cli.js'),
+    'import.meta.url': JSON.stringify(
+      isWin ? 'file:///C:/overwire-sea/cli.js' : 'file:///overwire-sea/cli.js',
+    ),
   },
   external: [
     '@napi-rs/keyring',

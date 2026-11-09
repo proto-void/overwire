@@ -43,6 +43,10 @@ jobs:
       - name: CLI typecheck
         run: pnpm --filter @overwire/cli typecheck
 
+      # wxt prepare writes .wxt/tsconfig.json; required after postinstall was removed.
+      - name: Prepare extension (wxt)
+        run: pnpm --filter @overwire/extension exec wxt prepare
+
       - name: Unit tests
         run: pnpm --filter @overwire/extension test
 
@@ -171,9 +175,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: overwire-db-sea-${{ matrix.pack_os }}-${{ matrix.pack_arch }}
-          path: |
-            cli/.sea/**
+          path: cli/.sea
           if-no-files-found: error
+          include-hidden-files: true
 
   os-packs:
     needs: [verify, sea-db-host]
@@ -242,6 +246,7 @@ jobs:
             cli/.packs/*.zip
             cli/.packs/*.tar.gz
           if-no-files-found: error
+          include-hidden-files: true
 
   release:
     needs: [verify, sea-db-host, os-packs]
