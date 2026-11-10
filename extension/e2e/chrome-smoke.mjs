@@ -427,7 +427,9 @@ try {
   check('main_frame page load redirected', [nav.title, nav.url], ['NEW', 'http://127.0.0.1:8002/new.html']);
 
   await popup.click('#detour-enabled');
-  await popup.waitForFunction(() => document.body.innerText.includes('Detour is off'), { timeout: 10000 });
+  await popup.waitForFunction(() => /is off\. No requests are being changed/i.test(document.body.innerText), {
+    timeout: 10000,
+  });
   check('switch reports off', await popup.$eval('#detour-enabled', (b) => b.getAttribute('aria-checked')), 'false');
   const off = await run('http://localhost:8001/page.html');
   check('switch off stops redirects', [off.A, off.B], ['PROD', 'PROD']);
