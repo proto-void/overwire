@@ -82,7 +82,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: overwire-packages
-          path: extension/.output/**/*.zip
+          # Brand-nested zips (default overwire/; legacy detour/). Avoid bare **/*.zip —
+          # upload-artifact v4 still missed nested files under hidden `.output` in CI.
+          path: |
+            extension/.output/overwire/*.zip
+            extension/.output/detour/*.zip
           if-no-files-found: error
           # `.output` is a hidden dir; v4 skips hidden paths unless this is true.
           include-hidden-files: true
