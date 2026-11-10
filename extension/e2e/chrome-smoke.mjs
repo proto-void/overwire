@@ -468,10 +468,15 @@ try {
 
   // API Tester — Which rules apply: the imported redirect for a.js should win; a loop must not.
   await clickTab('API Tester');
-  await editor.$$eval('.api-tester .response .subtabs button', (tabs) =>
+  // Response pane uses `.resp-tabs` (not `.subtabs`, which is the request-side tablist).
+  await editor.$$eval('.api-tester .resp-tabs button', (tabs) =>
     tabs.find((el) => /Which rules apply/i.test(el.textContent ?? ''))?.click(),
   );
   await editor.waitForSelector('#tester-url');
+  await editor.waitForFunction(
+    () => document.querySelector('.api-tester .resp-tabs button.active')?.textContent?.includes('Which rules apply'),
+    { timeout: 5000 },
+  );
   const setTesterUrl = async (url) => {
     // Controlled Svelte input: set value + dispatch input (avoid puppeteer type races).
     await editor.$eval(
@@ -500,13 +505,15 @@ try {
   const loopText = await testerText();
   check('API Tester does not let a redirect loop win', /No rule is applied/.test(loopText) && /not applied/i.test(loopText) && !/Redirects to/.test(loopText), true);
 
-  // Slice B — power tools surface + save-as-mock synergy
+  // Slice B — power tools surface + save-as-mock synergy (Tools drawer starts closed).
+  await editor.$eval('.api-tester .tools-btn', (btn) => btn.click());
+  await editor.waitForSelector('.power', { timeout: 5000 });
   check('API Tester power tools include Runner', await editor.$eval('.power', (el) => /Runner/.test(el.textContent ?? '')), true);
   await editor.$$eval('.power .tabs button', (tabs) => tabs.find((el) => /Code/i.test(el.textContent ?? ''))?.click());
   check('API Tester codegen panel shows fetch', await editor.$eval('.power .code', (el) => /fetch/i.test(el.textContent ?? '')), true);
   await setTesterUrl('http://127.0.0.1:8002/a.js');
   await editor.$eval('.power .synergy button', (btn) => {
-    const match = [...document.querySelectorAll('.power .synergy button')].find((el) => /Save response as Detour mock/i.test(el.textContent ?? ''));
+    const match = [...document.querySelectorAll('.power .synergy button')].find((el) => /Save response as .+ mock/i.test(el.textContent ?? ''));
     // Without a live response body, still exercise Redirect this to localhost
     void btn;
     void match;
@@ -520,6 +527,9 @@ try {
   // Discard synergy draft so later e2e group/rule indexing stays on the imported 2 groups.
   await editor.$$eval('button', (buttons) => buttons.find((el) => el.textContent?.trim() === 'Discard' && !el.disabled)?.click());
   await editor.waitForFunction(() => document.querySelectorAll('section.group').length === 2, { timeout: 8000 });
+  // Close any leftover rule drawer before creating the E2E group.
+  await editor.$$eval('[data-testid=drawer-done]', (buttons) => buttons[0]?.click());
+  await editor.waitForFunction(() => !document.querySelector('[data-testid=drawer]'), { timeout: 5000 }).catch(() => {});
 
   const setAutosave = async (on) => {
     await editor.$eval(
@@ -531,7 +541,7 @@ try {
     );
     await editor.waitForFunction((next) => document.querySelector('#autosave')?.getAttribute('aria-checked') === String(next), { timeout: 5000 }, on);
   };
-  const drawerPattern = () => editor.waitForSelector('[data-testid=drawer] input[id$="-pattern"]', { timeout: 5000 });
+  const drawerPattern = () => editor.waitForSelector('[data-testid=drawer] textarea[id$="-pattern"]', { timeout: 5000 });
   const openDrawerTab = async (label) => {
     await editor.waitForSelector('[data-testid=drawer]', { timeout: 5000 });
     await editor.$$eval('[data-testid=drawer] [role=tab]', (tabs, name) => {
@@ -546,7 +556,7 @@ try {
   const drawerTo = async () => {
     await chooseAction('redirect');
     await openDrawerTab('Action');
-    return editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
+    return editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
   };
   // Manual Save now (autosave off): empty target is blocked; a filled rule applies.
   await clickTab('Rules');
@@ -567,9 +577,9 @@ try {
   await patternInput.type('*:8001/c.js');
   await chooseAction('redirect');
   await openDrawerTab('Action');
-  await editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
+  await editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
   const beforeSave = await editor.evaluate(() => {
-    const to = document.querySelector('[data-testid=drawer] input[id$="-to"]');
+    const to = document.querySelector('[data-testid=drawer] textarea[id$="-to"]');
     const save = document.querySelector('[data-testid=save-now]');
     return {
       toValue: to?.value ?? null,
@@ -588,7 +598,7 @@ try {
     () =>
       [...document.querySelectorAll('.message.error')].some((el) => /where matching/i.test(el.textContent ?? '')) ||
       document.activeElement?.id?.endsWith('-to') ||
-      document.querySelector('[data-testid=drawer] input[id$="-to"][aria-invalid=true]'),
+      document.querySelector('[data-testid=drawer] textarea[id$="-to"][aria-invalid=true]'),
     { timeout: 8000 },
   );
   check(
@@ -596,14 +606,14 @@ try {
     await editor.evaluate(
       () =>
         document.activeElement?.id?.endsWith('-to') ||
-        document.querySelector('[data-testid=drawer] input[id$="-to"]')?.getAttribute('aria-invalid') === 'true',
+        document.querySelector('[data-testid=drawer] textarea[id$="-to"]')?.getAttribute('aria-invalid') === 'true',
     ),
     true,
   );
 
   await (await drawerTo()).type('http://127.0.0.1:8002/c.js');
   await openDrawerTab('Test');
-  await (await editor.waitForSelector('[data-testid=drawer] input[id$="-sample"]', { timeout: 5000 })).type('http://localhost:8001/c.js');
+  await (await editor.waitForSelector('[data-testid=drawer] textarea[id$="-sample"]', { timeout: 5000 })).type('http://localhost:8001/c.js');
   const preview = await editor.$eval('[data-testid=drawer] [data-testid=preview]', (el) => el.textContent.replace(/\s+/g, ' ').trim());
   check('live preview shows the redirect target', preview, 'Matches. It would go to http://127.0.0.1:8002/c.js'.replace(/^/, '✓ '));
 
@@ -654,8 +664,8 @@ try {
 
   await chooseAction('redirect');
   await openDrawerTab('Action');
-  await editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
-  await editor.$eval('[data-testid=drawer] input[id$="-to"]', (el, value) => {
+  await editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
+  await editor.$eval('[data-testid=drawer] textarea[id$="-to"]', (el, value) => {
     el.focus();
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -892,7 +902,8 @@ try {
   await popup.bringToFront();
   await popup.click('#theme-light');
   await popup.waitForFunction(() => document.documentElement.dataset.theme === 'light');
-  check('light theme background', await popup.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(244, 246, 248)');
+  // Overwire light `--bg` is #f8fafc (see brands/overwire/tokens.css).
+  check('light theme background', await popup.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(248, 250, 252)');
   // tokens: --bg light remains #f4f6f8
   await popup.reload();
   await popup.waitForFunction(() => document.documentElement.dataset.theme === 'light', { timeout: 10000 });
