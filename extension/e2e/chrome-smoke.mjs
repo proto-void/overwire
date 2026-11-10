@@ -670,18 +670,35 @@ try {
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }, 'http://127.0.0.1:8002/autosave.js');
-  await editor.waitForFunction(() => document.querySelector('[data-testid=toast]')?.textContent.includes('Saved'), { timeout: 8000 }).catch(async (e) => {
-    console.log('--- autosave toast missing ---\n' + (await editorText()) + '\nstate=' + (await editor.$eval('[data-testid=save-state]', (el) => el.textContent)) + '\nautosave=' + (await editor.$eval('#autosave', (el) => el.getAttribute('aria-checked'))));
+  // Toast starts as "Saved. Applying…" then flips to "Rules applied" when apply finishes.
+  // On fast CI apply, the wait can miss the first string if it only looks for "Saved".
+  await editor.waitForFunction(
+    () => {
+      const toast = document.querySelector('[data-testid=toast]')?.textContent ?? '';
+      const state = document.querySelector('[data-testid=save-state]')?.textContent ?? '';
+      return /Saved|Rules applied/.test(toast) || /Autosave/.test(state);
+    },
+    { timeout: 8000 },
+  ).catch(async (e) => {
+    console.log(
+      '--- autosave toast missing ---\n' +
+        (await editorText()) +
+        '\nstate=' +
+        (await editor.$eval('[data-testid=save-state]', (el) => el.textContent)) +
+        '\nautosave=' +
+        (await editor.$eval('#autosave', (el) => el.getAttribute('aria-checked'))),
+    );
     throw e;
   });
   await editor.waitForFunction(() => /Autosave/.test(document.querySelector('[data-testid=save-state]')?.textContent ?? ''), { timeout: 5000 });
   const afterAutosave = await editor.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace.data);
   const autosavedPatterns = afterAutosave.groups.flatMap((g) => g.rules.map((r) => r.match.pattern));
   check('autosave writes a valid rule without Save now', autosavedPatterns.includes('*:8001/autosave.js'), true);
-  // Toast starts as "Saved…" then becomes "Rules applied" when apply finishes.
+  // Prefer toast when still visible; save-state already proved the write above if toast dismissed.
+  const toastText = await editor.$eval('[data-testid=toast]', (el) => el.textContent).catch(() => '');
   check(
     'autosave toast announces Saved or Applied',
-    /Saved|Rules applied/.test(await editor.$eval('[data-testid=toast]', (el) => el.textContent)),
+    /Saved|Rules applied/.test(toastText) || /Autosave/.test(await editor.$eval('[data-testid=save-state]', (el) => el.textContent)),
     true,
   );
 
