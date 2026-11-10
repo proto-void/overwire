@@ -590,7 +590,12 @@
   onstatus={(next) => (licenseStatus = next)}
 />
 {#if toastOpen}
-  <Toast message={toastMessage} ondismiss={dismissToast} onundo={toastCanUndo ? undoAutosave : undefined} />
+  <Toast
+    message={toastMessage}
+    ondismiss={dismissToast}
+    onundo={toastCanUndo ? undoAutosave : undefined}
+    durationMs={toastCanUndo ? 12000 : 4000}
+  />
 {/if}
 
 {#if showRebrandBanner}

@@ -665,23 +665,28 @@ try {
   await chooseAction('redirect');
   await openDrawerTab('Action');
   await editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
+  // Arm before typing: toast copy is "Saved. Applying…" then "Rules applied"; Undo stays ~12s when offered.
+  // Old wait only matched "Saved", so fast CI apply (toast already "Rules applied" or save-state-only) timed out.
+  const autosaveCommitted = editor.waitForFunction(
+    () => {
+      const toast = document.querySelector('[data-testid=toast]')?.textContent ?? '';
+      const state = document.querySelector('[data-testid=save-state]')?.textContent ?? '';
+      return (
+        !!document.querySelector('[data-testid=toast-undo]') ||
+        /Saved|Rules applied/.test(toast) ||
+        /^Autosave/.test(state)
+      );
+    },
+    { timeout: 10000 },
+  );
   await editor.$eval('[data-testid=drawer] textarea[id$="-to"]', (el, value) => {
     el.focus();
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }, 'http://127.0.0.1:8002/autosave.js');
-  // Toast starts as "Saved. Applying…" then flips to "Rules applied" when apply finishes.
-  // On fast CI apply, the wait can miss the first string if it only looks for "Saved".
-  await editor.waitForFunction(
-    () => {
-      const toast = document.querySelector('[data-testid=toast]')?.textContent ?? '';
-      const state = document.querySelector('[data-testid=save-state]')?.textContent ?? '';
-      return /Saved|Rules applied/.test(toast) || /Autosave/.test(state);
-    },
-    { timeout: 8000 },
-  ).catch(async (e) => {
+  await autosaveCommitted.catch(async (e) => {
     console.log(
-      '--- autosave toast missing ---\n' +
+      '--- autosave commit missing ---\n' +
         (await editorText()) +
         '\nstate=' +
         (await editor.$eval('[data-testid=save-state]', (el) => el.textContent)) +
@@ -690,19 +695,18 @@ try {
     );
     throw e;
   });
-  await editor.waitForFunction(() => /Autosave/.test(document.querySelector('[data-testid=save-state]')?.textContent ?? ''), { timeout: 5000 });
   const afterAutosave = await editor.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace.data);
   const autosavedPatterns = afterAutosave.groups.flatMap((g) => g.rules.map((r) => r.match.pattern));
   check('autosave writes a valid rule without Save now', autosavedPatterns.includes('*:8001/autosave.js'), true);
-  // Prefer toast when still visible; save-state already proved the write above if toast dismissed.
   const toastText = await editor.$eval('[data-testid=toast]', (el) => el.textContent).catch(() => '');
   check(
     'autosave toast announces Saved or Applied',
-    /Saved|Rules applied/.test(toastText) || /Autosave/.test(await editor.$eval('[data-testid=save-state]', (el) => el.textContent)),
+    /Saved|Rules applied/.test(toastText) || /^Autosave/.test(await editor.$eval('[data-testid=save-state]', (el) => el.textContent)),
     true,
   );
 
-  await editor.click('[data-testid=toast-undo]');
+  const undoBtn = await editor.waitForSelector('[data-testid=toast-undo]', { timeout: 5000 });
+  await undoBtn.click();
   await editor.waitForFunction(async () => {
     const data = (await chrome.storage.local.get('workspace')).workspace.data;
     return !data.groups.flatMap((g) => g.rules.map((r) => r.match.pattern)).includes('*:8001/autosave.js');
