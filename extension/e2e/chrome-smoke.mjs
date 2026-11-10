@@ -11,8 +11,18 @@ import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 
-const EXT = path.resolve(import.meta.dirname, '../.output/detour/chrome-mv3');
+const EXT_CANDIDATES = [
+  path.resolve(import.meta.dirname, '../.output/overwire/chrome-mv3'),
+  path.resolve(import.meta.dirname, '../.output/detour/chrome-mv3'),
+];
+const EXT = EXT_CANDIDATES.find((p) => fs.existsSync(path.join(p, 'manifest.json')));
 const CHROME = process.env.CHROME;
+if (!EXT) {
+  console.error(
+    'No unpacked Chrome MV3 build found. Run `pnpm --filter @overwire/extension build` first (default brand overwire, or BRAND=detour).',
+  );
+  process.exit(2);
+}
 if (!CHROME) {
   console.error('Set CHROME to a Chrome for Testing binary (npx @puppeteer/browsers install chrome@stable).');
   process.exit(2);
