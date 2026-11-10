@@ -84,6 +84,8 @@ jobs:
           name: overwire-packages
           path: extension/.output/**/*.zip
           if-no-files-found: error
+          # `.output` is a hidden dir; v4 skips hidden paths unless this is true.
+          include-hidden-files: true
 
   sea-db-host:
     runs-on: ${{ matrix.runner }}
