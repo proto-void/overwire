@@ -4,6 +4,8 @@
 
 ## Done
 
+- [!] **CI verify still red after argv SEA green (2026-11-10):** Runs `42734539757` / `42735455811` / `42735966674` all had **sea-db-host + os-packs success** (macos-arm64 included). Verify: brand.test fixed; e2e EXT path fixed; latest still times out in `chrome-smoke.mjs` ~line 430 (`waitForFunction` 10s after popup switch). Non-blocking for helper argv; do not treat red verify as reason to re-copy old `70bdf6` arm64. Follow-up e2e polish separate.
+
 - [x] **CI e2e path after BRAND=overwire (2026-11-10):** `extension/e2e/chrome-smoke.mjs` now resolves `.output/overwire/chrome-mv3` (fallback detour). Prior verify failure on PR run was unit brand.test (fixed) then e2e `Extensions.loadUnpacked` path-not-found on stale detour output dir. SEA/os-packs already green with argv fix.
 
 - [x] **What's-next commit + CI SEA argv (2026-11-10):** Committed monorepo `a16dc06` (rebrand/helper/licensing/store assets; promo brief/MP4 omitted) + follow-up `4ce5876` (brand.test expects Overwire). overwire-web `c2a94f1` committed locally (not pushed). Pushed branch `ci/sea-argv-origin-fix` → PR https://github.com/proto-void/overwire/pull/2. Run https://github.com/proto-void/overwire/actions/runs/42734539757: **sea-db-host + os-packs all green** (incl. macos-arm64); verify failed only on stale Detour brand.test (fixed in `4ce5876`). New CI arm64 helper SHA256 `f92921a195af08f939d153872098930bbd6b9dd0cc179e26d065cc21a04f607b` — origin-argv framed `hello` **PASS** (≠ pre-fix `70bdf6…`). Local SoT: `cli/.sea` + `cli/.packs/overwire-0.1.3-macos-arm64.zip` still `8fc88a…`; stale `overwire-0.1.2-macos-arm64.zip` still embeds `70bdf6…` — do not reinstall from that zip. Left alone: Stripe live, 301 Worker, promo/YouTube, CWS re-upload, npm publish.
