@@ -4,6 +4,8 @@
 
 ## Done
 
+- [x] **CI verify green after zip artifact path fix (2026-11-10):** Chrome e2e already green on `917dabc`; verify then failed upload-artifact `extension/.output/**/*.zip` (hidden brand-nested outs). Fixed in `a01c433` to `extension/.output/overwire/*.zip` + `detour/*.zip` with `include-hidden-files`. Run https://github.com/proto-void/overwire/actions/runs/42738668605 — **verify + sea-db-host + os-packs all success**. PR https://github.com/proto-void/overwire/pull/2. Left Stripe/301/promo/CWS alone; local macos-arm64 SoT untouched.
+
 - [!] **CI verify still red after argv SEA green (2026-11-10):** Runs `42734539757` / `42735455811` / `42735966674` all had **sea-db-host + os-packs success** (macos-arm64 included). Verify: brand.test fixed; e2e EXT path fixed; latest still times out in `chrome-smoke.mjs` ~line 430 (`waitForFunction` 10s after popup switch). Non-blocking for helper argv; do not treat red verify as reason to re-copy old `70bdf6` arm64. Follow-up e2e polish separate.
 
 - [x] **CI e2e path after BRAND=overwire (2026-11-10):** `extension/e2e/chrome-smoke.mjs` now resolves `.output/overwire/chrome-mv3` (fallback detour). Prior verify failure on PR run was unit brand.test (fixed) then e2e `Extensions.loadUnpacked` path-not-found on stale detour output dir. SEA/os-packs already green with argv fix.
