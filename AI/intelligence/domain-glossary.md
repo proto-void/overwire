@@ -1,6 +1,6 @@
 # Domain glossary
 
-**Last verified:** 2026-10-21 (API Tester UX: autosaveRequests, Collection v2.1 naming)
+**Last verified:** 2026-11-10 (licensing Approved + OWPRO keys; Overwire ADR-031)
 
 | Term | Meaning |
 |------|---------|
@@ -25,7 +25,12 @@
 | **detour-db / DB host** | Native messaging host (default `com.detour.db`) started by `connectNative`; `hello` handshake; multi-engine adapters; SSH/proxy tunnels; `pickFile`; secrets in OS keychain (memory fallback in tests); auto-exits when the port closes. Distinct from Local Bridge. Partner closed helpers may use another host name out of tree (ADR-030) |
 | **DbConnection v2** | Nested connection metadata (`tls`, `ssh`, `proxy`, `advanced`, `engineOptions`) with load-time migration from flat `tlsEnabled` / flat SSH |
 | **Query collection** | Saved DB (or API) queries in folders. Never called a “workspace” in UI copy |
-| **RO** | Resource Override ([kylepaulsen/ResourceOverride](https://github.com/kylepaulsen/ResourceOverride)) — upstream inspiration and legacy import format only; the product name is **Detour** |
+| **Overwire** | Current product name (ADR-031). Formerly **Detour**. Mark: Concept A Bypass Arc. Domain `overwire.protovoid.com`; brand pack `extension/brands/overwire/`; default build slug `overwire` (legacy `BRAND=detour`) |
+| **Detour** | Former product name / current default `DETOUR_BRAND` slug. Storage keys and Chromium extension ids stay for zero-loss upgrade |
+| **Bypass Arc** | Official Overwire mark (LOCKED): orange override arc over dashed production wire landing on green terminal. Concepts B/C rejected |
+| **RO** | Resource Override ([kylepaulsen/ResourceOverride](https://github.com/kylepaulsen/ResourceOverride)) — upstream inspiration and legacy import format only; the product name is **Overwire** |
+| **OWPRO** | Offline Ed25519 license key prefix for Pro/Team (ADR-032); format `OWPRO.<base64url-payload>.<base64url-sig>`; WebCrypto verify offline in `extension/src/licensing/verify.ts`; no phone-home DB. Spec [licensing.md](../specs/licensing.md) **Approved**. MIT core stays ungated |
+| **licenseKey / licenseStatus** | Additive `storage.local` keys for pasted OWPRO string + derived `{ valid, tier, claims, reason }`. Org override via Chromium `storage.managed.licenseKey` when valid |
 | **SDD** | Spec-driven development — Draft → Approved before implementation |
 | **Workspace** | All groups the user has; stored/exported as `{ v, data }` envelope |
 | **Candidate** | A compiled DNR rule before ids/priority are assigned |

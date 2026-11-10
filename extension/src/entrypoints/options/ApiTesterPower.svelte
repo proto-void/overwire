@@ -17,6 +17,7 @@
   } from '../../api-client/runner';
   import {
     alarmNameFor,
+    legacyAlarmNameFor,
     MIN_INTERVAL_MINUTES,
     normalizePeriodMinutes,
     SCHEDULE_BROWSER_OPEN_COPY,
@@ -32,6 +33,7 @@
   import type { VariableScopes } from '../../api-client/variables';
   import type { Workspace } from '../../rule-model/schema';
   import Field from '../../ui/Field.svelte';
+  import ProUpgradeStrip from '../../ui/ProUpgradeStrip.svelte';
 
   let {
     apiState,
@@ -107,7 +109,7 @@
         delayMs,
         stopOnFail,
         dataFileText: dataFileText.trim() || undefined,
-        globalApplyDetour: globalApply,
+        globalApplyRules: globalApply,
         workspace,
         scopes: varScopes,
         sandboxUrl,
@@ -153,7 +155,7 @@
         request,
         count: loadCount,
         concurrency: loadConcurrency,
-        globalApplyDetour: globalApply,
+        globalApplyRules: globalApply,
         workspace,
         scopes: varScopes,
         dnr,
@@ -201,6 +203,7 @@
   async function removeSchedule(id: string) {
     try {
       await browser.alarms.clear(alarmNameFor(id));
+      await browser.alarms.clear(legacyAlarmNameFor(id));
     } catch {
       /* ignore */
     }
@@ -276,6 +279,7 @@
   </div>
 
   {#if panel === 'runner'}
+    <ProUpgradeStrip hint="Collection run reports and HTML/JSON export stay available without a key." />
     <div class="row">
       <label>Iterations <input type="number" min="1" max="1000" bind:value={iterations} /></label>
       <label>Delay ms <input type="number" min="0" bind:value={delayMs} /></label>
@@ -313,7 +317,7 @@
         <textarea id="data-file" rows="3" bind:value={dataFileText} placeholder={'name,id\nalice,1'}></textarea>
       {/snippet}
     </Field>
-    <p class="muted">Uses dual-scope Apply Detour rules per request. Active collection: {activeCollection?.name ?? 'none'}.</p>
+    <p class="muted">Uses dual-scope Apply rules per request. Active collection: {activeCollection?.name ?? 'none'}.</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -344,6 +348,7 @@
       </ul>
     {/if}
   {:else if panel === 'load'}
+    <ProUpgradeStrip hint="Multi-worker load reports stay available without a key." />
     <div class="row">
       <label>Count <input type="number" min="1" max="1000" bind:value={loadCount} /></label>
       <label>Concurrency <input type="number" min="1" max="50" bind:value={loadConcurrency} /></label>

@@ -1,11 +1,12 @@
-# Free local DB images for Detour db-client contract tests. No cloud accounts.
+# Free local DB images for Overwire db-client contract tests. No cloud accounts.
 # Usage:
 #   docker compose -f docker-compose.db.yml up -d cassandra postgres mysql redis mongo
-#   DETOUR_DB_E2E=1 corepack pnpm --filter @detour/cli test:db-e2e
+#   BRAND_DB_E2E=1 (or DETOUR_DB_E2E=1) corepack pnpm --filter @overwire/cli test:db-e2e
 #
 # Heavy images (oracle, mssql, opensearch) are profile-gated.
+# Compose project name + local DB credentials keep `detour` to avoid breaking existing volumes.
 
-name: detour-db
+name: overwire-db
 
 services:
   cassandra:

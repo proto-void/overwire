@@ -7,9 +7,9 @@ Free · MIT · No account · No Detour server
 [![Product site](https://img.shields.io/badge/site-detour.protovoid.com-7b1398)](https://detour.protovoid.com/)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Detour-4285F4)](https://chromewebstore.google.com/detail/detour/jfgbokgdgpjhkciooicmbdgablgkklmn)
 [![MIT](https://img.shields.io/badge/license-MIT-0f0c1b)](LICENSE)
-[![GitHub](https://img.shields.io/badge/github-proto--void%2Fdetour-4a1f9a)](https://github.com/proto-void/detour)
+[![GitHub](https://img.shields.io/badge/github-proto--void%2Foverwire-4a1f9a)](https://github.com/proto-void/overwire)
 
-Product site: [detour.protovoid.com](https://detour.protovoid.com/) · Source: [github.com/proto-void/detour](https://github.com/proto-void/detour) · Privacy: [detour.protovoid.com/privacy/](https://detour.protovoid.com/privacy/)
+Product site: [detour.protovoid.com](https://detour.protovoid.com/) · Source: [github.com/proto-void/overwire](https://github.com/proto-void/overwire) · Privacy: [detour.protovoid.com/privacy/](https://detour.protovoid.com/privacy/)
 
 Detour is a free, open-source browser extension to redirect requests, modify headers, mock fetch/XHR, inject JS/CSS, and replace response bodies so you can aim production URLs at localhost or mock code — locally, without a proxy appliance or paid SaaS.
 
@@ -520,7 +520,7 @@ More detail: [cli/README.md](cli/README.md).
 
 ### Recommended: OS pack (no Node)
 
-Download one pack from [GitHub Releases](https://github.com/proto-void/detour/releases):
+Download one pack from [GitHub Releases](https://github.com/proto-void/overwire/releases):
 
 | Pack | Machine |
 |------|---------|
@@ -890,7 +890,7 @@ corepack pnpm --filter @detour/extension zip
 # → extension/.output/detour/detour-<version>-chrome.zip
 ```
 
-Brand flavors use build-time `DETOUR_BRAND` (default `detour`). Partner Rogers product retired (plan 033 / ADR-026 note).
+Brand flavors use build-time `BRAND` / `DETOUR_BRAND` (default `overwire`; legacy `BRAND=detour`). Partner Rogers product retired (plan 033 / ADR-026 note).
 
 Distribution, CI, and store listing: [docs/distribution/README.md](docs/distribution/README.md). Bridge CLI: [cli/README.md](cli/README.md).
 

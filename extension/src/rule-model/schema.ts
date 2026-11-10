@@ -199,7 +199,9 @@ export const WorkspaceSchema = v.pipe(
 
 /** Envelope shared by export files and the stored workspace. */
 export const EnvelopeSchema = v.object({
-  v: v.literal(SCHEMA_VERSION, `Unsupported Detour schema version (expected ${SCHEMA_VERSION})`),
+  v: v.literal(SCHEMA_VERSION, `Unsupported schema version (expected ${SCHEMA_VERSION})`),
+  /** Present on Overwire exports; legacy Detour files omit this (treated as detour). */
+  product: v.optional(v.picklist(['overwire', 'detour'])),
   data: WorkspaceSchema,
 });
 

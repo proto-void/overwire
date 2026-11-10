@@ -111,4 +111,4 @@ Smoke shape (redacted): contacts, `9042`, `DC1`, truststore/CA only, no client k
 - **Stream A1:** public Detour Rogers scrub (scripts/rules/docs/ids) — no Cassandra adapter edits.
 - **Stream B:** `cli/src/db/adapters/cassandra*.ts` + tests only — after or parallel to A1 if file disjoint.
 - **Verify last.** Shared: `PROGRESS.md` append-only.
-- Leave alone: unrelated Detour modules; do not delete `proto-void/detour` or `detour-web`.
+- Leave alone: unrelated Detour modules; do not delete `proto-void/overwire` or `proto-void/overwire-web`.

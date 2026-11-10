@@ -338,6 +338,20 @@ try {
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.waitForFunction(() => document.body.innerText.includes('Point production at your code.'), { timeout: 10000 });
   check('empty state shown before import', true, true);
+  const popupBox = await popup.evaluate(() => {
+    const app = document.getElementById('app');
+    const rect = (app ?? document.body).getBoundingClientRect();
+    return {
+      height: rect.height,
+      width: rect.width,
+      textLen: (document.body.innerText || '').trim().length,
+      theme: document.documentElement.dataset.theme || '',
+    };
+  });
+  check('popup app has non-trivial height (not black square)', popupBox.height >= 120, true);
+  check('popup app has non-trivial width', popupBox.width >= 200, true);
+  check('popup has visible text content', popupBox.textLen >= 20, true);
+  check('popup theme applied', popupBox.theme === 'dark' || popupBox.theme === 'light', true);
 
   await popup.click('details.import > summary');
   const input = await popup.$('input[type=file]');
@@ -1092,7 +1106,7 @@ try {
       func: () => ({
         SRI_JS: window.SRI_JS,
         SRI_JS_BAD: window.SRI_JS_BAD,
-        meta: document.querySelector('meta[name="detour-sri"]')?.getAttribute('content') ?? '',
+        meta: document.querySelector('meta[name="overwire-sri"]')?.getAttribute('content') ?? '',
       }),
     });
     await chrome.tabs.remove(tab.id);

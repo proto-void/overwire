@@ -3,11 +3,13 @@
   import CodeEditor from '../../ui/CodeEditor.svelte';
   import Drawer from '../../ui/Drawer.svelte';
   import Icon from '../../ui/icons/Icon.svelte';
+  import ProUpgradeStrip from '../../ui/ProUpgradeStrip.svelte';
   import DbSidebar from './db/DbSidebar.svelte';
   import DbExplorer from './db/DbExplorer.svelte';
   import DbQueryWorkbench from './db/DbQueryWorkbench.svelte';
   import DbResultsPane from './db/DbResultsPane.svelte';
   import DbCollectionsTree from './db/DbCollectionsTree.svelte';
+  import JsonTreeView from './db/JsonTreeView.svelte';
   import {
     clearCollectionQueryIds,
     collectQueryIdsInCollection,
@@ -59,7 +61,7 @@
   import { exportDbBundle } from '../../db-client/export';
   import { appendSelectIfNeeded, newTabWithSelect } from '../../db-client/query-tabs';
   import { resolveRunPlan, statementAtOffset } from '../../db-client/statement';
-  import { formatDbCell } from '../../db-client/cell-format';
+  import { formatDbCell, formatPayload } from '../../db-client/cell-format';
   import {
     connectNativePort,
     createNativeRpcClient,
@@ -75,7 +77,7 @@
 
   const area = browser.storage.local;
   const IDLE_DEFAULT_MS = 15 * 60 * 1000;
-  const RELEASES_URL = 'https://github.com/proto-void/detour/releases';
+  const RELEASES_URL = 'https://github.com/proto-void/overwire/releases';
   const HOST_NAME = nativeHostName;
 
   type HelperStatus =
@@ -105,7 +107,7 @@
   let search = $state('');
   let explorerSearch = $state('');
   let consistency = $state('LOCAL_ONE');
-  let pageSize = $state(500);
+  let pageSize = $state(200);
   let tracing = $state(false);
   let txMode = $state(false);
   let pendingEditsJson = $state('[]');
@@ -115,6 +117,12 @@
   let compareText = $state('');
   let running = $state(false);
   let activeRequestId = $state<string | null>(null);
+  let batchProgress = $state<{ current: number; total: number } | null>(null);
+  let chunkProgress = $state<{ index: number; total: number } | null>(null);
+  /** Session cache: skip setKeyspace RPC when unchanged for this connection. */
+  let lastAppliedKeyspaceByConnId: Record<string, string | null> = {};
+  let persistTimer: ReturnType<typeof setTimeout> | undefined;
+  let persistWaiters: Array<() => void> = [];
   let resultsPane: 'results' | 'messages' = $state('results');
   let rootKeyspaces: ExplorerNode[] = $state.raw([]);
   let childrenByParentId: Record<string, ExplorerNode[]> = $state.raw({});
@@ -186,6 +194,11 @@
   const activeResultIndex = $derived(activeTab?.activeResultIndex ?? 0);
   const activeResult = $derived(resultSets[activeResultIndex] ?? null);
   const batchMessages = $derived(activeTab?.batchMessages ?? []);
+  const formattedDrawerPayload = $derived.by(() => {
+    const d = drawer;
+    if (!d) return null;
+    return formatPayload(d.payload);
+  });
   const pageToken = $derived(activeResult?.pageToken ?? null);
   const lastStatement = $derived(activeResult?.lastStatement ?? '');
   const collectionsExpandedIds = $derived(ui.collectionsExpandedIds ?? []);
@@ -667,13 +680,18 @@
     }
     try {
       rpc?.disconnect();
+      lastAppliedKeyspaceByConnId = {};
       rpc = createNativeRpcClient(connectNativePort, HOST_NAME);
       rpc.setOnDisconnect(() => {
         helperStatus = 'stopped';
         helperVersion = '';
         helperCapabilities = [];
         helperOpen = 0;
+        lastAppliedKeyspaceByConnId = {};
         rpc = null;
+      });
+      rpc.setOnProgress((info) => {
+        chunkProgress = { index: info.index, total: info.total };
       });
       const hello = (await rpc.request('hello')) as HelloResult;
       const mismatch = protocolMismatchMessage(hello);
@@ -722,6 +740,7 @@
     if (idleTimer) clearTimeout(idleTimer);
     rpc?.disconnect();
     rpc = null;
+    lastAppliedKeyspaceByConnId = {};
     helperStatus = 'stopped';
     helperVersion = '';
     helperCapabilities = [];
@@ -734,8 +753,26 @@
     await startHelper();
   }
 
-  async function persist() {
+  async function flushPersist(): Promise<void> {
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = undefined;
+    }
+    const waiters = persistWaiters;
+    persistWaiters = [];
     await saveDbClientState(area, dbState);
+    for (const w of waiters) w();
+  }
+
+  /** Debounced ~250ms; strips result rows inside saveDbClientState. */
+  async function persist(): Promise<void> {
+    return new Promise((resolve) => {
+      persistWaiters.push(resolve);
+      if (persistTimer) clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => {
+        void flushPersist();
+      }, 250);
+    });
   }
 
   async function storeDraftSecrets(secretAccount: string) {
@@ -1027,18 +1064,21 @@
     if (!tab) return;
 
     if (nextPage) {
-      const statement = tab.resultSets?.[tab.activeResultIndex ?? 0]?.lastStatement ?? lastStatement;
+      const statement = tab.resultSets?.[tab.resultSets.length - 1]?.lastStatement ?? lastStatement;
       if (!statement) return;
       const runConnId = tab.connectionId || selected.id;
       const runConn = dbState.connections.find((c) => c.id === runConnId) ?? selected;
-      await executeOne(statement, true, tabId, runConn, tab.activeResultIndex ?? 0);
+      await executeOne(statement, true, tabId, runConn, tab.resultSets.length - 1);
       return;
     }
 
     const source = codeEditor?.getValue() ?? tab.body;
     const selection = codeEditor?.getSelection() ?? '';
+    
     const plan = resolveRunPlan(source, selection);
-    if (plan.statements.length === 0) return;
+    if (!plan || !plan.statements || plan.statements.length === 0) return;
+
+    // Keyspace context comes from cached setKeyspace + qualifyTableRef for explorer inserts.
     if (!tab.connectionId) updateActiveTab({ connectionId: selectedId });
     await runStatements(plan.statements, tabId);
   }
@@ -1093,17 +1133,19 @@
       confirmExpected = verdict.objectName ?? runConn.name;
       confirmTyped = '';
       confirmOpen = true;
-      pendingRun = () => executeBatch(statements, tabId, runConn);
+      pendingRun = () => executeBatch(statements, tabId, runConn); 
       return;
     }
-    await executeBatch(statements, tabId, runConn);
-  }
+    await executeBatch(statements, tabId, runConn); 
+}
 
   async function executeBatch(statements: string[], tabId: string, runConn: DbConnection) {
     selectedId = runConn.id;
     if (!(await connectSelected()) || !rpc) return;
     batchAbort = false;
     running = true;
+    chunkProgress = null;
+    batchProgress = { current: 1, total: statements.length };
     bumpIdle();
     patchTab(tabId, { resultSets: [], activeResultIndex: 0, batchMessages: [] });
     resultsPane = 'results';
@@ -1111,6 +1153,8 @@
     try {
       for (let i = 0; i < statements.length; i++) {
         if (batchAbort) break;
+        batchProgress = { current: i + 1, total: statements.length };
+        chunkProgress = null;
         const statement = statements[i]!;
         const ok = await executeOne(statement, false, tabId, runConn, -1);
         if (!ok) break;
@@ -1118,9 +1162,12 @@
     } finally {
       running = false;
       activeRequestId = null;
+      batchProgress = null;
+      chunkProgress = null;
       await persist();
     }
   }
+
 
   /** Returns false on error / abort (stops batch). nextPageIndex is resultSets index, or -1 to append. */
   async function executeOne(
@@ -1128,10 +1175,21 @@
     nextPage: boolean,
     tabId: string,
     runConn: DbConnection,
-    resultIndex: number,
+    resultIndex: number
   ): Promise<boolean> {
     selectedId = runConn.id;
     if (!(await connectSelected()) || !rpc) return false;
+    const activeKs = activeKeyspaceFor(runConn.id);
+    if (activeKs !== lastAppliedKeyspaceByConnId[runConn.id]) {
+      try {
+        if (activeKs) {
+          await rpc.request('setKeyspace', { connectionId: runConn.id, keyspace: activeKs });
+        }
+        lastAppliedKeyspaceByConnId[runConn.id] = activeKs;
+      } catch (err) {
+        console.error('Failed to pre-set session keyspace:', err);
+      }
+    }
     const requestId = newId('req');
     activeRequestId = requestId;
     running = true;
@@ -1148,7 +1206,7 @@
         params: [],
         pageToken: pageTok,
         requestId,
-        options: { pageSize, consistency, tracing, requestId },
+        options: { pageSize, consistency, tracing, requestId, keyspace: activeKs || undefined },
       })) as {
         columns: string[];
         rows: unknown[][];
@@ -1179,7 +1237,7 @@
         activeIdx = sets.length - 1;
       }
       patchTab(tabId, { resultSets: sets, activeResultIndex: activeIdx });
-      if ((result.warnings?.length ?? 0) > 0) resultsPane = 'messages';
+      if ((result.warnings?.length ?? 0) > 0) resultsPane = 'results';
       else resultsPane = 'results';
       dbState = {
         ...dbState,
@@ -1227,6 +1285,8 @@
       } else {
         running = false;
         activeRequestId = null;
+        batchProgress = null;
+        chunkProgress = null;
         await persist();
       }
       activeRequestId = null;
@@ -1237,6 +1297,8 @@
     batchAbort = true;
     const req = activeRequestId;
     running = false;
+    batchProgress = null;
+    chunkProgress = null;
     if (!req || !rpc || !selected) {
       activeRequestId = null;
       return;
@@ -1707,18 +1769,13 @@
     const blob = new Blob([exportDbBundle(dbState)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'detour-db-export.json';
+    a.download = 'overwire-db-export.json';
     a.click();
     URL.revokeObjectURL(a.href);
   }
 
   function openDrawer(mode: DrawerMode) {
     drawer = mode;
-  }
-
-  function copyDrawerJson() {
-    if (!drawer) return;
-    void navigator.clipboard.writeText(JSON.stringify(drawer.payload, null, 2));
   }
 
   function onGlobalKey(e: KeyboardEvent) {
@@ -1766,7 +1823,56 @@
     return () => window.removeEventListener('keydown', onGlobalKey);
   });
 
-  onDestroy(() => stopHelper());
+  onDestroy(() => {
+    stopHelper();
+    if (persistTimer) clearTimeout(persistTimer);
+    void flushPersist();
+  });
+
+  // Inside your <script lang="ts"> block
+  let alertMessage = $state('');
+
+  function triggerAlert(message: string) {
+    alertMessage = message;
+    setTimeout(() => {
+      alertMessage = '';
+    }, 2000); // Automatically clear the toast after 2 seconds
+  }
+
+  function copyDrawerJson() {
+    if (!drawer?.payload) return;
+    
+    const payload = drawer.payload as Record<string, unknown>;
+    let dataToCopy: unknown = payload;
+    
+    // If the drawer is wrapping a single cell selection view, 
+    // extract only the actual background row data object.
+    if ('row' in payload && payload.row !== null && typeof payload.row === 'object') {
+      dataToCopy = payload.row;
+    }
+    
+    void navigator.clipboard.writeText(JSON.stringify(formatPayload(dataToCopy), null, 2));
+  }
+
+  function copyColumnValue() {
+    if (!drawer?.payload) return;
+    
+    const payload = drawer.payload as Record<string, unknown>;
+    
+    // Explicitly target the primary cell contents if wrapped inside a cell selection event
+    const rawValue = 'value' in payload ? payload.value : payload;
+
+    let textToCopy = '';
+    if (rawValue !== null && typeof rawValue === 'object') {
+      // If the cell value itself is a nested configuration array or object structure
+      textToCopy = JSON.stringify(formatPayload(rawValue), null, 2);
+    } else {
+      // If it's a primitive string name or integer cell index, copy without wrapping symbols
+      textToCopy = String(rawValue);
+    }
+
+    void navigator.clipboard.writeText(textToCopy);
+  }
 </script>
 
 
@@ -2090,9 +2196,13 @@
             activeResultIndex={activeResultIndex}
             batchMessages={batchMessages}
             running={running}
+            batchProgress={batchProgress}
+            chunkProgress={chunkProgress}
+            canCancel={canCancel}
             bind:activePane={resultsPane}
             onSelectResult={setActiveResultIndex}
             onLoadMore={() => void runQuery(true)}
+            onCancel={() => void stopQuery()}
             onRowClick={(row, index) =>
               openDrawer({
                 kind: 'row',
@@ -2124,10 +2234,15 @@
   onclose={() => (drawer = null)}
 >
   {#snippet head()}
-    <button type="button" class="btn" onclick={copyDrawerJson}>Copy JSON</button>
+    <div class="drawer-actions-row" style="display: flex; gap: 8px;">
+    <!-- CONNECTED ONCLICK HOOKS -->
+    <button type="button" class="btn" onclick={copyDrawerJson}>Copy row JSON</button>
+    <button type="button" class="btn" onclick={copyColumnValue}>Copy column value</button>
+  </div>
   {/snippet}
   {#if drawer?.kind === 'pro'}
     <div class="pro-drawer">
+      <ProUpgradeStrip hint="ER, compare, and designer export stay available without a key." />
       <button
         type="button"
         class="btn"
@@ -2223,8 +2338,43 @@
       {#if designerDdl}<pre class="ddl">{designerDdl}</pre>{/if}
       {#if explainText}<pre class="ddl">{explainText}</pre>{/if}
     </div>
-  {:else if drawer}
-    <pre class="ddl">{JSON.stringify(drawer.payload, null, 2)}</pre>
+  {:else if drawer && formattedDrawerPayload !== null}
+    <div class="interactive-json-viewer" style="padding: 4px 0;">
+      <JsonTreeView value={formattedDrawerPayload} />
+    </div>
+    {#if alertMessage}
+      <div class="soft-alert" aria-live="polite">
+        {alertMessage}
+      </div>
+    {/if}
+
+    <style>
+      /* Appended directly inside your main style container at the base of the file */
+      .soft-alert {
+        position: absolute;
+        bottom: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--surface-2, color-mix(in srgb, var(--surface) 80%, white));
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        z-index: 999;
+        pointer-events: none;
+        animation: fadeIn 0.15s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translate(-50%, 6px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+      }
+
+      /* Keep your existing .pro-drawer, .ddl, or .explorer class stylings beneath this... */
+    </style>
   {/if}
 </Drawer>
 

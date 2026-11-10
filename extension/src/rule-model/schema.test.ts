@@ -81,7 +81,7 @@ describe('EnvelopeSchema', () => {
   it('requires the schema version', () => {
     const result = parseEnvelope({ v: 9, data: { groups: [] } });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors[0]).toContain('v: Unsupported Detour schema version');
+    if (!result.ok) expect(result.errors[0]).toContain('v: Unsupported schema version');
   });
 
   it('accepts an empty workspace', () => {

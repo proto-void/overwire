@@ -221,7 +221,7 @@ describe('syncRules', () => {
     expect(report.applied.map((a) => a.ruleId)).toEqual(['a']);
     expect(report.injected).toEqual([{ groupId: 'g', ruleId: 'm', kind: 'mock' }]);
     expect(report.refused).toEqual([expect.objectContaining({ ruleId: 'js', reason: 'user-scripts-unavailable' })]);
-    expect([...registered].sort()).toEqual(['detour-bridge', 'detour-mock']);
+    expect([...registered].sort()).toEqual(['overwire-bridge', 'overwire-mock']);
 
     await saveEnabled(area, false);
     const off = await syncRules(dnr, area, fixedNow, page);

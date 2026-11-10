@@ -25,8 +25,10 @@ export type ParseResult<T> = ParseOk<T> | ParseErr;
 const SettingsSchema = v.object({
   activeEnvironmentId: v.optional(v.nullable(v.string()), null),
   globals: v.optional(v.array(v.any()), []),
-  applyDetourRules: v.optional(v.boolean(), true),
-  /** Missing key means on (same as applyDetourRules default). */
+  applyRules: v.optional(v.boolean()),
+  /** Legacy Detour key; accepted on read, never written. */
+  applyDetourRules: v.optional(v.boolean()),
+  /** Missing key means on (same as applyRules default). */
   autosaveRequests: v.optional(v.boolean(), true),
   schedules: v.optional(v.array(v.any()), []),
 });
@@ -38,6 +40,15 @@ export function truncateBody(text: string, cap = BODY_PREVIEW_CAP): string {
 
 export function capHistory(entries: HistoryEntry[], cap = HISTORY_CAP): HistoryEntry[] {
   return entries.slice(0, cap);
+}
+
+function resolveApplyRulesSetting(settings: {
+  applyRules?: boolean;
+  applyDetourRules?: boolean;
+}): boolean {
+  if (typeof settings.applyRules === 'boolean') return settings.applyRules;
+  if (typeof settings.applyDetourRules === 'boolean') return settings.applyDetourRules;
+  return true;
 }
 
 export async function loadApiClientState(area: StorageAreaLike): Promise<ParseResult<ApiClientState>> {
@@ -75,7 +86,7 @@ export async function loadApiClientState(area: StorageAreaLike): Promise<ParseRe
           output: {
             activeEnvironmentId: null,
             globals: [],
-            applyDetourRules: true,
+            applyRules: true,
             autosaveRequests: true,
             schedules: [],
           },
@@ -89,7 +100,7 @@ export async function loadApiClientState(area: StorageAreaLike): Promise<ParseRe
     runs: runs ?? [],
     activeEnvironmentId: settingsParsed.success ? settingsParsed.output.activeEnvironmentId : null,
     globals: settingsParsed.success ? settingsParsed.output.globals : [],
-    applyDetourRules: settingsParsed.success ? settingsParsed.output.applyDetourRules : true,
+    applyRules: settingsParsed.success ? resolveApplyRulesSetting(settingsParsed.output) : true,
     autosaveRequests: settingsParsed.success ? settingsParsed.output.autosaveRequests : true,
     schedules: settingsParsed.success ? (settingsParsed.output.schedules ?? []) : [],
   };
@@ -133,7 +144,7 @@ export async function saveApiClientState(area: StorageAreaLike, state: ApiClient
     [API_SETTINGS_KEY]: {
       activeEnvironmentId: value.activeEnvironmentId,
       globals: value.globals,
-      applyDetourRules: value.applyDetourRules,
+      applyRules: value.applyRules,
       autosaveRequests: value.autosaveRequests,
       schedules: value.schedules,
     },

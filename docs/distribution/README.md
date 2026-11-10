@@ -2,7 +2,7 @@
 
 Detour is free and MIT. CI and packaging use GitHub Actions on the free tier. There is no Detour server and no store API token in this repo.
 
-The installed extension name is **Detour**. Store listings use **Detour** (short description clarifies resource overriding so it is not confused with the unrelated Firefox proxy add-on). See [store-listing.md](store-listing.md), [permissions.md](permissions.md), and [privacy.md](privacy.md).
+The installed extension name is **Detour**. Store listings use **Detour** (short description clarifies resource overriding so it is not confused with the unrelated Firefox proxy add-on). See [store-listing.md](store-listing.md), [permissions.md](permissions.md), [privacy.md](privacy.md), and [support.md](support.md) (Help & Community policy; canonical URL `https://overwire.protovoid.com/support/`).
 
 ## Run the same checks as CI
 
@@ -108,7 +108,7 @@ Do that only after `main` is on the remote and CI is green. This workspace does 
 There is no git remote until you add one. Example, after you create an empty GitHub repo:
 
 ```sh
-git remote add origin git@github.com:proto-void/detour.git
+git remote add origin git@github.com:proto-void/overwire.git
 git push -u origin main
 ```
 

@@ -10,27 +10,28 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 /**
- * Brand directory: `DETOUR_BRAND_DIR` (absolute path) wins; else `brands/<DETOUR_BRAND>`.
+ * Brand directory: `BRAND_DIR` / `DETOUR_BRAND_DIR` (absolute path) wins;
+ * else `brands/<BRAND|DETOUR_BRAND>` (default `overwire` after CWS rebrand cutover).
  * External dirs let private partner repos build without copying assets into this tree (ADR-030).
  */
 function resolveBrandDir(): { dir: string; slug: string } {
-  const external = process.env.DETOUR_BRAND_DIR?.trim();
+  const external = (process.env.BRAND_DIR || process.env.DETOUR_BRAND_DIR || '').trim();
   if (external) {
     const dir = path.isAbsolute(external) ? external : path.resolve(process.cwd(), external);
     if (!existsSync(path.join(dir, 'brand.ts'))) {
       throw new Error(
-        `DETOUR_BRAND_DIR="${dir}" is missing brand.ts (see brands/_template/).`,
+        `BRAND_DIR/DETOUR_BRAND_DIR="${dir}" is missing brand.ts (see brands/_template/).`,
       );
     }
-    const slugEnv = process.env.DETOUR_BRAND?.trim();
-    const slug = slugEnv || path.basename(dir) || 'detour';
+    const slugEnv = (process.env.BRAND || process.env.DETOUR_BRAND || '').trim();
+    const slug = slugEnv || path.basename(dir) || 'overwire';
     return { dir, slug };
   }
-  const slug = (process.env.DETOUR_BRAND || 'detour').trim() || 'detour';
+  const slug = (process.env.BRAND || process.env.DETOUR_BRAND || 'overwire').trim() || 'overwire';
   const dir = path.join(root, 'brands', slug);
   if (!existsSync(path.join(dir, 'brand.ts'))) {
     throw new Error(
-      `Unknown DETOUR_BRAND="${slug}". Expected ${path.relative(root, path.join(dir, 'brand.ts'))} (see brands/_template/), or set DETOUR_BRAND_DIR.`,
+      `Unknown BRAND/DETOUR_BRAND="${slug}". Expected ${path.relative(root, path.join(dir, 'brand.ts'))} (see brands/_template/), or set BRAND_DIR.`,
     );
   }
   return { dir, slug };
@@ -41,7 +42,7 @@ function loadBrand(brandDir: string): BrandConfig {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mod = require(brandPath) as { default: BrandConfig };
   const brand = mod.default;
-  const nameOverride = process.env.DETOUR_BRAND_NAME?.trim();
+  const nameOverride = (process.env.BRAND_NAME || process.env.DETOUR_BRAND_NAME || '').trim();
   if (nameOverride) return { ...brand, name: nameOverride };
   return brand;
 }
@@ -95,11 +96,14 @@ export default defineConfig({
     // so local unpacked + OS packs retain a stable extension id.
     ...(browser !== 'firefox' &&
     brand.chromiumManifestKey &&
+    process.env.BRAND_OMIT_CHROMIUM_MANIFEST_KEY !== '1' &&
     process.env.DETOUR_OMIT_CHROMIUM_MANIFEST_KEY !== '1'
       ? { key: brand.chromiumManifestKey }
       : {}),
     // auto-icons fills `icons`; also set action.default_icon so the toolbar
     // never falls back to Chrome's letter glyph when icons/ is present.
+    // default_title is re-applied in build:manifestGenerated — WXT copies
+    // popup/index.html <title> over action.default_title after this object merges.
     action: {
       default_title: brand.name,
       default_icon: {
@@ -121,6 +125,8 @@ export default defineConfig({
     sandbox: {
       pages: ['api-script-sandbox.html'],
     },
+    // Chromium enterprise policy schema for org license keys (licensing.md / ADR-032).
+    ...(browser !== 'firefox' ? { storage: { managed_schema: 'managed_schema.json' } } : {}),
     ...(browser === 'firefox'
       ? {
           optional_permissions: [
@@ -135,7 +141,8 @@ export default defineConfig({
           ],
           browser_specific_settings: {
             gecko: {
-              id: 'detour@protovoid.com',
+              // Brand slug drives AMO id (plan 041 cutover → overwire@; BRAND=detour keeps legacy).
+              id: brand.slug === 'detour' ? 'detour@protovoid.com' : 'overwire@protovoid.com',
               strict_min_version: '128.0',
               data_collection_permissions: { required: ['none'] },
             },
@@ -146,6 +153,13 @@ export default defineConfig({
           optional_permissions: ['nativeMessaging', 'notifications', 'cookies', 'identity'],
         }),
   }),
+  // Popup HTML <title> becomes action.default_title and would pin "Detour" for every brand.
+  hooks: {
+    'build:manifestGenerated': (_wxt, manifest) => {
+      manifest.action ??= {};
+      manifest.action.default_title = brand.name;
+    },
+  },
   vite: () => ({
     define: {
       'import.meta.env.BRAND': JSON.stringify({
@@ -158,6 +172,10 @@ export default defineConfig({
       // Emitted as a file URL only when the optional partner mark exists (never invent trademarks).
       'import.meta.env.PARTNER_LOGO_URL': JSON.stringify(
         partnerLogoUrl ? `/@fs/${partnerLogoUrl}` : '',
+      ),
+      // Public Ed25519 SPKI only (base64url/base64). Never bake a private signing key.
+      'import.meta.env.LICENSE_VERIFY_PUBLIC_KEY': JSON.stringify(
+        (process.env.LICENSE_VERIFY_PUBLIC_KEY || process.env.BRAND_LICENSE_VERIFY_PUBLIC_KEY || '').trim(),
       ),
     },
     resolve: {

@@ -72,11 +72,15 @@ export type Body = v.InferOutput<typeof BodySchema>;
 export const REQUEST_PROTOCOLS = ['http', 'websocket', 'sse'] as const;
 export type RequestProtocol = (typeof REQUEST_PROTOCOLS)[number];
 
-/** Per-request Apply Detour rules: inherit global default, or force on/off. */
-export const APPLY_DETOUR_MODES = ['inherit', 'on', 'off'] as const;
-export type ApplyDetourMode = (typeof APPLY_DETOUR_MODES)[number];
+/** Per-request Apply rules: inherit global default, or force on/off. */
+export const APPLY_RULES_MODES = ['inherit', 'on', 'off'] as const;
+export type ApplyRulesMode = (typeof APPLY_RULES_MODES)[number];
+/** @deprecated Prefer APPLY_RULES_MODES */
+export const APPLY_DETOUR_MODES = APPLY_RULES_MODES;
+/** @deprecated Prefer ApplyRulesMode */
+export type ApplyDetourMode = ApplyRulesMode;
 
-export const ApiRequestSchema = v.object({
+const ApiRequestFieldsSchema = v.object({
   id: Id,
   name: NonEmpty,
   method: v.picklist(HTTP_METHODS),
@@ -89,9 +93,22 @@ export const ApiRequestSchema = v.object({
   body: v.optional(BodySchema, { mode: 'none' }),
   preRequestScript: v.optional(v.string(), ''),
   testScript: v.optional(v.string(), ''),
-  /** `inherit` (default) uses API Tester global `applyDetourRules`. */
-  applyDetourRules: v.optional(v.picklist(APPLY_DETOUR_MODES), 'inherit'),
+  /** `inherit` (default) uses API Tester global `applyRules`. */
+  applyRules: v.optional(v.picklist(APPLY_RULES_MODES)),
+  /** Legacy Detour field; accepted on read, never written. */
+  applyDetourRules: v.optional(v.picklist(APPLY_RULES_MODES)),
 });
+
+export const ApiRequestSchema = v.pipe(
+  ApiRequestFieldsSchema,
+  v.transform((input) => {
+    const { applyDetourRules: legacy, applyRules, ...rest } = input;
+    return {
+      ...rest,
+      applyRules: applyRules ?? legacy ?? ('inherit' as const),
+    };
+  }),
+);
 export type ApiRequest = v.InferOutput<typeof ApiRequestSchema>;
 
 export type CollectionNode =
@@ -213,7 +230,7 @@ export const ApiClientStateSchema = v.object({
   activeEnvironmentId: v.optional(v.nullable(v.string()), null),
   globals: v.optional(v.array(KvRowSchema), []),
   history: v.optional(v.array(HistoryEntrySchema), []),
-  applyDetourRules: v.optional(v.boolean(), true),
+  applyRules: v.optional(v.boolean(), true),
   /** When true (default), dirty active request tab autosaves after ~1s idle. */
   autosaveRequests: v.optional(v.boolean(), true),
   /** Past collection runs (Slice B), capped separately in storage. */
@@ -228,7 +245,7 @@ export const emptyApiClientState = (): ApiClientState => ({
   activeEnvironmentId: null,
   globals: [],
   history: [],
-  applyDetourRules: true,
+  applyRules: true,
   autosaveRequests: true,
   runs: [],
   schedules: [],
@@ -246,7 +263,7 @@ export const emptyRequest = (id: string, name = 'New request'): ApiRequest => ({
   body: { mode: 'none' },
   preRequestScript: '',
   testScript: '',
-  applyDetourRules: 'inherit',
+  applyRules: 'inherit',
 });
 
 export const newKvRow = (id: string, key = '', value = ''): KvRow => ({

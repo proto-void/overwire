@@ -1,15 +1,27 @@
 import type { Refusal } from '../engine-core/compile';
 import type { StorageAreaLike } from '../rule-model/storage';
-import { PAGE_CONFIG_KEY, USER_SCRIPT_PREFIX, type InjectedKind, type PagePlan, type UserScriptSpec } from './plan';
+import {
+  LEGACY_USER_SCRIPT_PREFIX,
+  PAGE_CONFIG_KEY,
+  USER_SCRIPT_PREFIX,
+  type InjectedKind,
+  type PagePlan,
+  type UserScriptSpec,
+} from './plan';
 
-export const BRIDGE_ID = 'detour-bridge';
-export const MOCK_RUNTIME_ID = 'detour-mock';
+export const BRIDGE_ID = 'overwire-bridge';
+export const MOCK_RUNTIME_ID = 'overwire-mock';
+/** Pre-Overwire content-script ids; unregister on sync so scripts never double-inject. */
+export const LEGACY_BRIDGE_ID = 'detour-bridge';
+export const LEGACY_MOCK_RUNTIME_ID = 'detour-mock';
 /** WXT output paths of `entrypoints/bridge.content.ts` and `entrypoints/mock-main.content.ts`. */
 export const BRIDGE_FILE = 'content-scripts/bridge.js';
 export const MOCK_RUNTIME_FILE = 'content-scripts/mock-main.js';
 
 /** Sent by extension pages after the user allows user scripts (Chrome toggle / Firefox permission). */
-export const RESYNC_MESSAGE = 'detour:resync';
+export const RESYNC_MESSAGE = 'overwire:resync';
+/** Pre-Overwire resync message; background still accepts it. */
+export const LEGACY_RESYNC_MESSAGE = 'detour:resync';
 
 type RunAt = 'document_start' | 'document_end' | 'document_idle';
 
@@ -82,10 +94,13 @@ export async function syncPage(api: PageApi, area: StorageAreaLike, plan: PagePl
       ...(plan.needsBridge ? [registration(BRIDGE_ID, BRIDGE_FILE, 'ISOLATED')] : []),
       ...(plan.needsMockRuntime ? [registration(MOCK_RUNTIME_ID, MOCK_RUNTIME_FILE, 'MAIN')] : []),
     ];
-    const present = new Set((await api.scripting.getRegisteredContentScripts({ ids: [BRIDGE_ID, MOCK_RUNTIME_ID] })).map((s) => s.id));
-    const stale = [...present].filter((id) => !wanted.some((w) => w.id === id));
+    const knownIds = [BRIDGE_ID, MOCK_RUNTIME_ID, LEGACY_BRIDGE_ID, LEGACY_MOCK_RUNTIME_ID];
+    const present = new Set((await api.scripting.getRegisteredContentScripts({ ids: knownIds })).map((s) => s.id));
+    const legacy = [LEGACY_BRIDGE_ID, LEGACY_MOCK_RUNTIME_ID].filter((id) => present.has(id));
+    const stale = [BRIDGE_ID, MOCK_RUNTIME_ID].filter((id) => present.has(id) && !wanted.some((w) => w.id === id));
+    const toUnregister = [...legacy, ...stale];
     const missing = wanted.filter((w) => !present.has(w.id));
-    if (stale.length > 0) await api.scripting.unregisterContentScripts({ ids: stale });
+    if (toUnregister.length > 0) await api.scripting.unregisterContentScripts({ ids: toUnregister });
     if (missing.length > 0) await api.scripting.registerContentScripts(missing);
   } catch (e) {
     // Everything except inline JS (user scripts) depends on these registrations.
@@ -107,7 +122,9 @@ export async function syncPage(api: PageApi, area: StorageAreaLike, plan: PagePl
 }
 
 async function replaceUserScripts(userScripts: NonNullable<PageApi['userScripts']>, specs: UserScriptSpec[]) {
-  const ours = (await userScripts.getScripts()).filter((s) => s.id.startsWith(USER_SCRIPT_PREFIX)).map((s) => s.id);
+  const ours = (await userScripts.getScripts())
+    .filter((s) => s.id.startsWith(USER_SCRIPT_PREFIX) || s.id.startsWith(LEGACY_USER_SCRIPT_PREFIX))
+    .map((s) => s.id);
   if (ours.length > 0) await userScripts.unregister({ ids: ours });
   const strip = ({ groupId: _g, ruleId: _r, ...script }: UserScriptSpec) => script;
   try {

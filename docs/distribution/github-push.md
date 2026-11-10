@@ -1,15 +1,15 @@
 # Push Detour to GitHub (Protovoid org)
 
-Use your **Protovoid** organization account (not `HamzaKhan-Rogers`). Create empty public repos first if they do not exist: `proto-void/detour` and `proto-void/detour-web`.
+Use your **Protovoid** organization account (not `HamzaKhan-Rogers`). Create empty public repos first if they do not exist: `proto-void/overwire` and `proto-void/overwire-web`.
 
-## Extension → `proto-void/detour`
+## Extension → `proto-void/overwire`
 
-From the local checkout (folder may still be named `Resource Override`):
+From the local checkout (folder is `/Users/hamzakhan/overwire`):
 
 ```sh
-cd "/Users/hamzakhan/Resource Override"
+cd "/Users/hamzakhan/overwire"
 git remote remove origin 2>/dev/null || true
-git remote add origin git@github.com:proto-void/detour.git
+git remote add origin git@github.com:proto-void/overwire.git
 # Review and commit your launch changes first, then:
 git push -u origin main
 ```
@@ -30,27 +30,27 @@ Privacy / homepage for the store listing:
 - https://detour.protovoid.com/privacy/
 - https://detour.protovoid.com
 
-## Product site → `proto-void/detour-web`
+## Product site → `proto-void/overwire-web`
 
 ```sh
-cd "/Users/hamzakhan/Project/detour-web"
+cd "/Users/hamzakhan/Project/overwire-web"
 git remote remove origin 2>/dev/null || true
-git remote add origin git@github.com:proto-void/detour-web.git
+git remote add origin git@github.com:proto-void/overwire-web.git
 git push -u origin main
 ```
 
 Or create + push in one step:
 
 ```sh
-cd "/Users/hamzakhan/Project/detour-web"
-gh repo create proto-void/detour-web --public --source=. --remote=origin --push
+cd "/Users/hamzakhan/Project/overwire-web"
+gh repo create proto-void/overwire-web --public --source=. --remote=origin --push
 ```
 
 ## Deploy site (after `wrangler login`)
 
 ```sh
-cd "/Users/hamzakhan/Project/detour-web"
+cd "/Users/hamzakhan/Project/overwire-web"
 npm run deploy
 ```
 
-See `~/Project/detour-web/docs/DEPLOY.md` for DNS notes.
+See `~/Project/overwire-web/docs/DEPLOY.md` for DNS notes.

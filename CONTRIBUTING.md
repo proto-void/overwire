@@ -22,4 +22,4 @@ Run the same checks as CI when you can: see [docs/distribution/README.md](docs/d
 ## Questions
 
 Product site: [https://detour.protovoid.com](https://detour.protovoid.com)  
-Source: [https://github.com/proto-void/detour](https://github.com/proto-void/detour)
+Source: [https://github.com/proto-void/overwire](https://github.com/proto-void/overwire)

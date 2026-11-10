@@ -25,7 +25,7 @@ describe('api-client storage', () => {
     await area.set({ [WORKSPACE_KEY]: { v: 1, data: { groups: [] } } });
     const state = emptyApiClientState();
     state.collections = [{ id: 'c1', name: 'Demo', description: '', variables: [], children: [] }];
-    state.applyDetourRules = true;
+    state.applyRules = true;
     expect((await saveApiClientState(area, state)).ok).toBe(true);
     const loaded = await loadApiClientState(area);
     expect(loaded.ok).toBe(true);
@@ -56,9 +56,22 @@ describe('api-client storage', () => {
     expect(loaded.value.history[0]?.url).toBe(`https://example.com/${HISTORY_CAP + 4}`);
   });
 
-  it('defaults applyDetourRules to on', async () => {
+  it('defaults applyRules to on', async () => {
     const loaded = await loadApiClientState(area);
-    expect(loaded.ok && loaded.value.applyDetourRules).toBe(true);
+    expect(loaded.ok && loaded.value.applyRules).toBe(true);
+  });
+
+  it('reads legacy applyDetourRules from apiSettings', async () => {
+    await area.set({
+      apiSettings: {
+        activeEnvironmentId: null,
+        globals: [],
+        applyDetourRules: false,
+        schedules: [],
+      },
+    });
+    const loaded = await loadApiClientState(area);
+    expect(loaded.ok && loaded.value.applyRules).toBe(false);
   });
 
   it('round-trips autosaveRequests and defaults missing to on', async () => {
@@ -75,7 +88,7 @@ describe('api-client storage', () => {
       apiSettings: {
         activeEnvironmentId: null,
         globals: [],
-        applyDetourRules: true,
+        applyRules: true,
         schedules: [],
       },
     });

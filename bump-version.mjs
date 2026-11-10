@@ -27,11 +27,12 @@ filesToUpdate.forEach(filePath => {
   }
 });
 
-// Run the WXT build and zip pipeline
-console.log('📦 Building and packaging Detour extension zip...');
+// Run the WXT build and zip pipeline (default brand = overwire after cutover)
+console.log('📦 Building and packaging default-brand (overwire) extension zip...');
 try {
-  execSync('corepack pnpm --filter @detour/extension zip', { stdio: 'inherit' });
-  console.log(`\n🎉 Success! Your Chrome Web Store zip is ready at:\n👉 extension/.output/detour/detour-${newVersion}-chrome.zip`);
+  execSync('corepack pnpm --filter @overwire/extension zip', { stdio: 'inherit' });
+  console.log(`\n🎉 Success! Chrome zip (default brand):\n👉 extension/.output/overwire/overwire-${newVersion}-chrome.zip`);
+  console.log(`Detour flavor: BRAND=detour corepack pnpm --filter @overwire/extension zip → extension/.output/detour/detour-${newVersion}-chrome.zip`);
 } catch (error) {
   console.error('❌ Build pipeline failed:', error.message);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PageApi } from '../page-inject/sync';
-import { SRI_RUNTIME_FILE, SRI_RUNTIME_ID, syncSriRuntime } from './sri-runtime';
+import { LEGACY_SRI_RUNTIME_ID, SRI_RUNTIME_FILE, SRI_RUNTIME_ID, syncSriRuntime } from './sri-runtime';
 
 function fakeScripting() {
   const content = new Map<string, unknown>();
@@ -28,5 +28,14 @@ describe('syncSriRuntime', () => {
     const { scripting, calls } = fakeScripting();
     calls.registerContentScripts.mockRejectedValueOnce(new Error('no file'));
     expect(await syncSriRuntime(scripting, true)).toBe('no file');
+  });
+
+  it('unregisters legacy detour-sri before registering overwire-sri', async () => {
+    const { scripting, content, calls } = fakeScripting();
+    content.set(LEGACY_SRI_RUNTIME_ID, { id: LEGACY_SRI_RUNTIME_ID });
+    expect(await syncSriRuntime(scripting, true)).toBeUndefined();
+    expect(content.has(LEGACY_SRI_RUNTIME_ID)).toBe(false);
+    expect(content.get(SRI_RUNTIME_ID)).toMatchObject({ id: SRI_RUNTIME_ID, js: [SRI_RUNTIME_FILE] });
+    expect(calls.unregisterContentScripts).toHaveBeenCalledWith({ ids: [LEGACY_SRI_RUNTIME_ID] });
   });
 });

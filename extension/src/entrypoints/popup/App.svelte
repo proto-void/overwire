@@ -11,12 +11,25 @@
   import { brandName } from '../../ui/brand';
   import BrandLockup from '../../ui/BrandLockup.svelte';
   import Icon from '../../ui/icons/Icon.svelte';
+  import LicenseBadge from '../../ui/LicenseBadge.svelte';
+  import LicenseModal from '../../ui/LicenseModal.svelte';
+  import { dismissRebrandBanner, REBRAND_BANNER_COPY, shouldShowRebrandBanner } from '../../ui/rebrand';
   import Switch from '../../ui/Switch.svelte';
   import ThemeToggle from '../../ui/ThemeToggle.svelte';
+  import {
+    LICENSE_KEY_STORAGE,
+    LICENSE_STATUS_STORAGE,
+    loadLicenseStatus,
+    refreshLicenseState,
+    type LicenseStatus,
+  } from '../../licensing/verify';
   import ImportPanel from './ImportPanel.svelte';
   import ReportView from './ReportView.svelte';
 
   const area = browser.storage.local;
+  const managedStorage =
+    (browser.storage as unknown as { managed?: { get: typeof browser.storage.local.get } }).managed ??
+    null;
   const inTab = new URLSearchParams(location.search).get('view') === 'tab';
   const version = browser.runtime.getManifest().version;
 
@@ -26,6 +39,9 @@
   let report: ApplyReport | undefined = $state();
   let tabMatches = $state(0);
   let importOpen = $state(false);
+  let showRebrandBanner = $state(false);
+  let licenseStatus: LicenseStatus | undefined = $state();
+  let licenseModalOpen = $state(false);
   const view = $derived(describeReport(report, workspace));
   const groups = $derived(workspace ? popupGroupList(workspace) : { shown: [], more: 0 });
   const counts = $derived(
@@ -81,10 +97,25 @@
     if (!inTab) window.close();
   }
 
+  async function dismissRebrand() {
+    showRebrandBanner = false;
+    await dismissRebrandBanner(area);
+  }
+
   onMount(() => {
     void refresh();
-    const onChanged = (_: unknown, areaName: string) => {
+    void shouldShowRebrandBanner(area).then((show) => (showRebrandBanner = show));
+    void refreshLicenseState({ local: area, managed: managedStorage })
+      .then((s) => (licenseStatus = s))
+      .catch(() => loadLicenseStatus(area).then((s) => (licenseStatus = s)));
+    const onChanged = (changes: Record<string, unknown>, areaName: string) => {
       if (areaName === 'local' || areaName === 'session') void refresh();
+      if (
+        (areaName === 'local' || areaName === 'managed') &&
+        (LICENSE_KEY_STORAGE in changes || LICENSE_STATUS_STORAGE in changes)
+      ) {
+        void loadLicenseStatus(area).then((s) => (licenseStatus = s));
+      }
     };
     browser.storage.onChanged.addListener(onChanged);
     return () => browser.storage.onChanged.removeListener(onChanged);
@@ -99,6 +130,13 @@
     </div>
     <Switch id="detour-enabled" checked={enabled} label="{brandName} enabled" labelVisible onchange={setEnabled} />
   </header>
+
+  {#if showRebrandBanner}
+    <div class="rebrand" role="status" data-testid="rebrand-banner">
+      <p>{REBRAND_BANNER_COPY}</p>
+      <button type="button" class="btn text" onclick={dismissRebrand}>Got it</button>
+    </div>
+  {/if}
 
   <div class="strip">
     <span><span class="dot ok"></span> {counts.applied} Applied</span>
@@ -154,9 +192,19 @@
 
   <footer>
     <ThemeToggle {area} variant="switch" />
+    <LicenseBadge status={licenseStatus} onclick={() => (licenseModalOpen = true)} />
     <Switch id="show-badge" checked={showBadge} label="Match count" labelVisible onchange={setShowBadge} />
   </footer>
 </main>
+
+<LicenseModal
+  open={licenseModalOpen}
+  {area}
+  managed={managedStorage}
+  status={licenseStatus}
+  onclose={() => (licenseModalOpen = false)}
+  onstatus={(next) => (licenseStatus = next)}
+/>
 
 <style>
   /* Chrome sizes the popup to scrollWidth; overflowing header/footer switches
@@ -258,6 +306,21 @@
   .tab-matches {
     margin: 0;
     font-size: 0.8rem;
+  }
+
+  .rebrand {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 0.8rem;
+  }
+
+  .rebrand p {
+    margin: 0;
+    color: var(--text-muted);
   }
 
   .groups {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { browser } from 'wxt/browser';
-  import { applyDetourRules } from '../../api-client/apply-rules';
+  import { applyRules } from '../../api-client/apply-rules';
   import {
     addChild,
     createCollection,
@@ -19,11 +19,11 @@
   import { looksLikeCurl, parseCurl, toCurl } from '../../api-client/curl';
   import { groupHistoryEntries, historyRowLabel } from '../../api-client/history-list';
   import {
-    APPLY_DETOUR_MODES,
+    APPLY_RULES_MODES,
     emptyApiClientState,
     emptyRequest,
     HTTP_METHODS,
-    type ApplyDetourMode,
+    type ApplyRulesMode,
     type ApiClientState,
     type ApiRequest,
     type Collection,
@@ -34,7 +34,7 @@
   import { buildDigestAuthorization, parseDigestChallenge } from '../../api-client/digest';
   import { prepareHttp, prepareHttpAsync } from '../../api-client/prepare';
   import { exportPostmanCollection, importPostmanCollection } from '../../api-client/postman';
-  import { resolveApplyDetourRules } from '../../api-client/resolve-apply-rules';
+  import { resolveApplyRules } from '../../api-client/resolve-apply-rules';
   import { runSandboxedScript, scopesToMaps } from '../../api-client/run-scripts';
   import type { ScriptTestResult } from '../../api-client/scripts';
   import { decryptSecret, encryptSecret, maskSecret, type EncryptedSecret } from '../../api-client/secrets';
@@ -166,9 +166,9 @@
   const activeTab = $derived(tabs.find((t) => t.id === activeTabId) ?? tabs[0]!);
   const request = $derived(activeTab.request);
   const dirtyRequest = $derived(JSON.stringify(activeTab.request) !== activeTab.savedSnapshot);
-  const globalApply = $derived(apiState?.applyDetourRules !== false);
+  const globalApply = $derived(apiState?.applyRules !== false);
   const autosaveOn = $derived(apiState?.autosaveRequests !== false);
-  const effectiveApply = $derived(resolveApplyDetourRules(globalApply, activeTab.request.applyDetourRules));
+  const effectiveApply = $derived(resolveApplyRules(globalApply, activeTab.request.applyRules));
   const historyGroups = $derived(groupHistoryEntries(apiState?.history ?? [], historyQuery));
 
   const activeEnv = $derived.by(() => {
@@ -246,7 +246,7 @@
 
   function setGlobalApply(next: boolean) {
     if (!apiState) return;
-    void persist({ ...apiState, applyDetourRules: next });
+    void persist({ ...apiState, applyRules: next });
   }
 
   function setAutosaveRequests(next: boolean) {
@@ -254,8 +254,8 @@
     void persist({ ...apiState, autosaveRequests: next });
   }
 
-  function setPerRequestApply(mode: ApplyDetourMode) {
-    patchRequest({ applyDetourRules: mode });
+  function setPerRequestApply(mode: ApplyRulesMode) {
+    patchRequest({ applyRules: mode });
   }
 
   function setActiveEnv(id: string) {
@@ -453,7 +453,7 @@
       statusMessage = parsed.error;
       return;
     }
-    patchRequest({ ...parsed.request, id: request.id, name: request.name, applyDetourRules: request.applyDetourRules });
+    patchRequest({ ...parsed.request, id: request.id, name: request.name, applyRules: request.applyRules });
     statusMessage = 'Filled from cURL.';
   }
 
@@ -461,7 +461,7 @@
     if (looksLikeCurl(value)) {
       const parsed = parseCurl(value);
       if (parsed.ok) {
-        patchRequest({ ...parsed.request, id: request.id, name: request.name, applyDetourRules: request.applyDetourRules });
+        patchRequest({ ...parsed.request, id: request.id, name: request.name, applyRules: request.applyRules });
         statusMessage = 'Filled from cURL.';
         return;
       }
@@ -550,7 +550,7 @@
       let rulesLabel: string | undefined;
 
       if (effectiveApply) {
-        const outcome = applyDetourRules(workspace, prepared, { userScripts });
+        const outcome = applyRules(workspace, prepared, { userScripts });
         rulesLabel = outcome.label;
         if (outcome.kind === 'blocked') {
           patchActive({
@@ -837,7 +837,7 @@
         statusMessage = parsed.error;
         return;
       }
-      patchRequest({ ...parsed.request, id: request.id, applyDetourRules: request.applyDetourRules });
+      patchRequest({ ...parsed.request, id: request.id, applyRules: request.applyRules });
       importOpen = false;
       statusMessage = 'Imported cURL.';
       return;
@@ -1076,7 +1076,7 @@
       </label>
       <label class="apply" title="Default for new requests and those set to Use global">
         <input type="checkbox" checked={globalApply} onchange={(e) => setGlobalApply((e.currentTarget as HTMLInputElement).checked)} />
-        Default: Apply Detour rules
+        Default: Apply rules
       </label>
       <label class="apply" title="Automatically save the active dirty request after 1 second idle">
         <input type="checkbox" checked={autosaveOn} onchange={(e) => setAutosaveRequests((e.currentTarget as HTMLInputElement).checked)} />
@@ -1651,8 +1651,8 @@
         <div class="request-actions">
           <label class="per-apply" title="Per-request override of the global default">
             <span class="muted">Rules</span>
-            <select aria-label="Apply Detour rules for this request" value={request.applyDetourRules ?? 'inherit'} onchange={(e) => setPerRequestApply((e.currentTarget as HTMLSelectElement).value as ApplyDetourMode)}>
-              {#each APPLY_DETOUR_MODES as mode (mode)}
+            <select aria-label="Apply rules for this request" value={request.applyRules ?? 'inherit'} onchange={(e) => setPerRequestApply((e.currentTarget as HTMLSelectElement).value as ApplyRulesMode)}>
+              {#each APPLY_RULES_MODES as mode (mode)}
                 <option value={mode}>{mode === 'inherit' ? 'Use global' : mode === 'on' ? 'On' : 'Off'}</option>
               {/each}
             </select>
@@ -1707,7 +1707,7 @@
           <p class="send-progress-label">{sendProgressLabel}</p>
         </div>
       {/if}
-      <p class="muted apply-hint" title="Effective Apply Detour rules for this request">
+      <p class="muted apply-hint" title="Effective Apply rules for this request">
         Rules: <strong>{effectiveApply ? 'On' : 'Off'}</strong>
       </p>
 
@@ -2266,7 +2266,7 @@
             {/each}
             {#if !enabled}<p class="note">Detour is off, so this is not live.</p>{/if}
             {#if dirty}<p class="note">Includes unsaved rule edits.</p>{/if}
-            <p class="note">Effective Apply Detour rules: {effectiveApply ? 'On' : 'Off'}.</p>
+            <p class="note">Effective Apply rules: {effectiveApply ? 'On' : 'Off'}.</p>
           </div>
         {:else}
           <p class="muted" data-testid="tester-result">Enter a URL to see which rules apply.</p>

@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Action, Workspace } from '../rule-model/schema';
 import { planPage, type PagePlan } from './plan';
-import { BRIDGE_ID, MOCK_RUNTIME_ID, syncPage, userScriptsAvailable, type PageApi } from './sync';
+import {
+  BRIDGE_ID,
+  LEGACY_BRIDGE_ID,
+  LEGACY_MOCK_RUNTIME_ID,
+  MOCK_RUNTIME_ID,
+  syncPage,
+  userScriptsAvailable,
+  type PageApi,
+} from './sync';
 
 const memoryArea = () => {
   const data: Record<string, unknown> = {};
@@ -48,8 +56,8 @@ describe('syncPage', () => {
     expect([...content.keys()].sort()).toEqual([BRIDGE_ID, MOCK_RUNTIME_ID]);
     expect(content.get(MOCK_RUNTIME_ID)).toMatchObject({ world: 'MAIN', runAt: 'document_start', allFrames: true, js: ['content-scripts/mock-main.js'] });
     expect(content.get(BRIDGE_ID)).toMatchObject({ world: 'ISOLATED', js: ['content-scripts/bridge.js'] });
-    expect([...user.keys()]).toEqual(['detour-r0']);
-    expect(user.get('detour-r0')).not.toHaveProperty('groupId');
+    expect([...user.keys()]).toEqual(['overwire-r0']);
+    expect(user.get('overwire-r0')).not.toHaveProperty('groupId');
     expect(area.data.pageConfig).toMatchObject({ styles: [{ ruleId: 'r1' }], mocks: [{ ruleId: 'r2' }] });
     expect(result).toEqual({ injected: expect.any(Array), refused: [], errors: [] });
     expect(result.injected).toHaveLength(3);
@@ -71,17 +79,38 @@ describe('syncPage', () => {
     expect(api.scripting.unregisterContentScripts).not.toHaveBeenCalled();
   });
 
+  it('unregisters legacy detour bridge/mock content scripts on sync', async () => {
+    const { api, content } = fakeApi();
+    content.set(LEGACY_BRIDGE_ID, { id: LEGACY_BRIDGE_ID });
+    content.set(LEGACY_MOCK_RUNTIME_ID, { id: LEGACY_MOCK_RUNTIME_ID });
+    await syncPage(api, memoryArea(), plan(ws(mock)));
+    expect([...content.keys()].sort()).toEqual([BRIDGE_ID, MOCK_RUNTIME_ID]);
+    expect(content.has(LEGACY_BRIDGE_ID)).toBe(false);
+    expect(content.has(LEGACY_MOCK_RUNTIME_ID)).toBe(false);
+    expect(api.scripting.unregisterContentScripts).toHaveBeenCalledWith({
+      ids: expect.arrayContaining([LEGACY_BRIDGE_ID, LEGACY_MOCK_RUNTIME_ID]),
+    });
+  });
+
   it("leaves other extensions' user scripts alone", async () => {
     const { api, user } = fakeApi();
     user.set('someone-else', {});
     await syncPage(api, memoryArea(), plan(ws(js('x'))));
-    expect([...user.keys()].sort()).toEqual(['detour-r0', 'someone-else']);
+    expect([...user.keys()].sort()).toEqual(['overwire-r0', 'someone-else']);
+  });
+
+  it('unregisters legacy detour-* user scripts on sync', async () => {
+    const { api, user } = fakeApi();
+    user.set('detour-old', {});
+    await syncPage(api, memoryArea(), plan(ws(js('x'))));
+    expect([...user.keys()].sort()).toEqual(['overwire-r0']);
+    expect(user.has('detour-old')).toBe(false);
   });
 
   it('refuses only the scripts the browser rejects', async () => {
     const { api, user } = fakeApi();
     const result = await syncPage(api, memoryArea(), plan(ws(js('ok'), js('REJECT'))));
-    expect([...user.keys()]).toEqual(['detour-r0']);
+    expect([...user.keys()]).toEqual(['overwire-r0']);
     expect(result.refused).toEqual([expect.objectContaining({ ruleId: 'r1', reason: 'inject-failed' })]);
     expect(result.injected.map((i) => i.ruleId)).toEqual(['r0']);
   });

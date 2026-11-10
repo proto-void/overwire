@@ -55,7 +55,7 @@ async function loadDriver(): Promise<DriverModule> {
     return (await import('cassandra-driver')) as unknown as DriverModule;
   } catch {
     throw new Error(
-      'cassandra-driver is not installed. From the repo root run: corepack pnpm --filter @detour/cli add cassandra-driver',
+      'cassandra-driver is not installed. From the repo root run: corepack pnpm --filter @overwire/cli add cassandra-driver',
     );
   }
 }

@@ -1,6 +1,6 @@
 # Load Detour unpacked (Developer mode)
 
-This zip is the **extension only** (store / sideload). It does **not** include the Databases helper. For a one-download setup with the helper, use an OS pack from [GitHub Releases](https://github.com/proto-void/detour/releases) (`detour-<version>-<os>-<arch>.zip`).
+This zip is the **extension only** (store / sideload). It does **not** include the Databases helper. For a one-download setup with the helper, use an OS pack from [GitHub Releases](https://github.com/proto-void/overwire/releases) (`detour-<version>-<os>-<arch>.zip`).
 
 **First:** Unzip this archive to a folder you will keep. Do **not** Load unpacked the `.zip` itself — Chrome needs the folder that contains `manifest.json`.
 

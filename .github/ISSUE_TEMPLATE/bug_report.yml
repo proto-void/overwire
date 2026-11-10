@@ -1,0 +1,92 @@
+name: 🐛 Bug Report
+description: Something broken in Overwire? Include browser + repro so a sole maintainer can isolate it.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Overwire. This is a **sole-maintainer**, free, open-source project.
+
+        Please use **[Discussions](https://github.com/proto-void/overwire/discussions)** for how-to questions.
+        There are **no accounts**, **no Overwire cloud sync**, and **no Slack / Discord / email 1:1 support**.
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Where you saw the bug.
+      options:
+        - Chrome
+        - Firefox
+        - Edge
+        - Other Chromium
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser_version
+    attributes:
+      label: Browser version
+      description: Exact version if you know it (e.g. Chrome 131.0.6778.86).
+      placeholder: e.g. 131.0.6778.86
+    validations:
+      required: false
+
+  - type: input
+    id: overwire_version
+    attributes:
+      label: Overwire version
+      description: Extension version from the popup or chrome://extensions (or about:addons on Firefox).
+      placeholder: e.g. 0.1.2
+    validations:
+      required: false
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Short description of the bug.
+      placeholder: Matching rule X stopped applying after reload…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The override should still rewrite the response body.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps help a lot more than screenshots alone.
+      placeholder: |
+        1. Install Overwire …
+        2. Add a matching rule …
+        3. Reload the page …
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: rules_or_logs
+    attributes:
+      label: Matching rules, console logs, or errors
+      description: Paste the rule(s) involved and any relevant DevTools / extension console output. Redact secrets.
+      placeholder: urlFilter, action type, console error text…
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: OS, related tabs (Workbench / API Tester / Databases / Local Bridge), recent import from Resource Override, etc.
+    validations:
+      required: false

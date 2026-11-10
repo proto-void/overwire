@@ -2,8 +2,8 @@
 
 **Detour** (“Point production at your code.”)  
 **Effective:** 2026-10-23  
-**Product site:** [https://detour.protovoid.com](https://detour.protovoid.com)  
-**Canonical policy URL:** [https://detour.protovoid.com/privacy/](https://detour.protovoid.com/privacy/)
+**Product site:** [https://overwire.protovoid.com](https://overwire.protovoid.com) (legacy host [detour.protovoid.com](https://detour.protovoid.com) also live dual-host 200; 301 cutover deferred)  
+**Canonical policy URL:** [https://overwire.protovoid.com/privacy/](https://overwire.protovoid.com/privacy/)
 
 Detour is a browser extension that runs on your device. It is free, MIT-licensed software. The project does not operate an account system or a server for the extension.
 
@@ -31,4 +31,4 @@ Chrome, Edge, and Firefox will show the extension’s permissions at install. Wh
 
 ## Contact
 
-Questions about this policy or Detour go to the maintainers via the [product site](https://detour.protovoid.com), the public repository [github.com/proto-void/detour](https://github.com/proto-void/detour), or email **detour@protovoid.com**. There is no account system and no Detour cloud service for the extension.
+Questions about this policy or Overwire go to the maintainers via the [product site](https://overwire.protovoid.com), the public repository [github.com/proto-void/overwire](https://github.com/proto-void/overwire) (old `proto-void/detour` URLs redirect), or email **overwire@protovoid.com**. There is no account system and no Overwire cloud service for the extension.

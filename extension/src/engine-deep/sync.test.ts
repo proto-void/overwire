@@ -124,17 +124,17 @@ describe('createBodyEngine', () => {
     await saveWorkspace(area, workspace);
 
     await syncRules(dnr, area, fixedNow, page, engine);
-    expect([...ids]).not.toContain('detour-sri');
+    expect([...ids]).not.toContain('overwire-sri');
 
     consented = true;
     const armed = await syncRules(dnr, area, fixedNow, page, engine);
     expect(armed.bodies).toEqual([{ groupId: 'g', ruleId: 'b' }]);
-    expect([...ids]).toContain('detour-sri');
+    expect([...ids]).toContain('overwire-sri');
     expect(JSON.stringify(armed)).not.toContain(secret);
 
     consented = false;
     await syncRules(dnr, area, fixedNow, page, engine);
-    expect([...ids]).not.toContain('detour-sri');
+    expect([...ids]).not.toContain('overwire-sri');
   });
 
   it('detaches when Detour is off', async () => {

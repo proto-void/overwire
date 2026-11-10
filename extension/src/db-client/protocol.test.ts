@@ -199,6 +199,10 @@ describe('createNativeRpcClient', () => {
       disconnect: vi.fn(),
     };
     const client = createNativeRpcClient(() => port, 'com.example.db');
+    const progress: Array<{ index: number; total: number }> = [];
+    client.setOnProgress((info) => {
+      progress.push({ index: info.index, total: info.total });
+    });
     await expect(client.request('hello')).resolves.toEqual({
       protocolVersion: PROTOCOL_VERSION,
       hostVersion: '0.1.0',
@@ -206,5 +210,9 @@ describe('createNativeRpcClient', () => {
     });
     await expect(client.request('version')).resolves.toEqual({ version: '0.1.0' });
     await expect(client.request('big')).resolves.toEqual({ ok: true, data: 'z'.repeat(100) });
+    expect(progress).toEqual([
+      { index: 0, total: 2 },
+      { index: 1, total: 2 },
+    ]);
   });
 });

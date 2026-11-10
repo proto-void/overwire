@@ -1,12 +1,13 @@
 /**
- * Capture real Detour extension UI screenshots for detour.protovoid.com.
+ * Capture real Overwire (or Detour) extension UI screenshots for the product site + CWS.
  *
  * Prefers Chrome for Testing + puppeteer-core --load-extension (same path as extension e2e).
  * Seeds demo-safe rules (example.com / localhost only). Dark theme.
  *
  * Usage:
- *   CHROME=$(node "../Resource Override/extension/scripts/install-chrome.mjs") \
- *     node scripts/capture-screenshots.mjs
+ *   CHROME=$(node scripts/install-chrome.mjs) \
+ *     DETOUR_EXT="$(pwd)/.output/overwire/chrome-mv3" \
+ *     node scripts/capture-web-screenshots.mjs
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -19,12 +20,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EXT_ROOT = path.resolve(__dirname, '..');
 const EXT =
   process.env.DETOUR_EXT ??
-  path.resolve(EXT_ROOT, '.output/detour/chrome-mv3');
+  process.env.BRAND_EXT ??
+  path.resolve(EXT_ROOT, '.output/overwire/chrome-mv3');
 const OUT =
   process.env.DETOUR_WEB_SHOTS ??
-  path.resolve(EXT_ROOT, '../../Project/detour-web/public/screenshots');
+  process.env.BRAND_WEB_SHOTS ??
+  path.resolve(EXT_ROOT, '../../Project/overwire-web/public/screenshots');
 const STORE =
   process.env.DETOUR_STORE_ASSETS ??
+  process.env.BRAND_STORE_ASSETS ??
   path.resolve(EXT_ROOT, '../docs/distribution/store-assets');
 
 const CHROME = process.env.CHROME;
@@ -79,7 +83,7 @@ const demoWorkspace = {
           action: {
             type: 'modifyHeaders',
             request: [
-              { op: 'set', name: 'X-Detour-Debug', value: '1' },
+              { op: 'set', name: 'X-Overwire-Debug', value: '1' },
               { op: 'remove', name: 'Cookie' },
             ],
             response: [{ op: 'set', name: 'Access-Control-Allow-Origin', value: '*' }],
@@ -95,7 +99,7 @@ const demoWorkspace = {
             type: 'injectJs',
             source: {
               kind: 'inline',
-              code: 'console.log("[detour] local inject");\nwindow.__DETOUR_DEMO__ = true;',
+              code: 'console.log("[overwire] local inject");\nwindow.__OVERWIRE_DEMO__ = true;',
             },
             runAt: 'document_start',
             allFrames: false,
@@ -225,6 +229,8 @@ try {
         theme: 'dark',
         showBadge: true,
         autosave: true,
+        // Dismiss one-time Detour→Overwire banner for clean store / site shots.
+        overwireRebrandSeen: true,
       });
       await chrome.storage.session.set({ matchLog });
     },
@@ -241,7 +247,7 @@ try {
   await popup.setViewport({ width: 400, height: 640, deviceScaleFactor: 2 });
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.waitForFunction(
-    () => document.documentElement.dataset.theme === 'dark' && /Applied|Rules|Detour/i.test(document.body.innerText),
+    () => document.documentElement.dataset.theme === 'dark' && /Applied|Rules|Overwire|Detour/i.test(document.body.innerText),
     { timeout: 15000 },
   );
   await sleep(400);
@@ -385,7 +391,7 @@ try {
     path.join(OUT, 'CAPTURE.md'),
     `# Screenshot capture
 
-- **Method:** Real Detour UI via Chrome for Testing + \`puppeteer-core\` (\`browser.installExtension\`), dark theme.
+- **Method:** Real Overwire UI via Chrome for Testing + \`puppeteer-core\` (\`browser.installExtension\`), dark theme.
 - **Build:** \`${EXT}\`
 - **Demo data:** example.com / localhost only (no customer hosts).
 - **Shots:** popup, redirect, headers, inject, mock, body, log (PNG + WebP).

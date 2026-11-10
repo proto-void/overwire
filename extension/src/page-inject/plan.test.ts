@@ -30,7 +30,7 @@ describe('planPage', () => {
     ];
     const plan = planPage(ws(group(rules)), { userScripts: true });
     expect(plan.userScripts).toHaveLength(1);
-    expect(plan.userScripts[0]).toMatchObject({ ruleId: rules[0]!.id, id: `detour-${rules[0]!.id}`, matches: ['<all_urls>'], runAt: 'document_start', world: 'MAIN' });
+    expect(plan.userScripts[0]).toMatchObject({ ruleId: rules[0]!.id, id: `overwire-${rules[0]!.id}`, matches: ['<all_urls>'], runAt: 'document_start', world: 'MAIN' });
     expect(plan.config.scripts).toEqual([expect.objectContaining({ url: 'http://localhost:5173/dev.js', runAt: 'document_end', allFrames: true })]);
     expect(plan.config.styles).toEqual([expect.objectContaining({ source: { kind: 'inline', code: 'body{color:red}' } })]);
     expect(plan.config.mocks).toEqual([expect.objectContaining({ status: 201, request: { source: '^https://app\\.test/api/.*?$', flags: 'i' } })]);
@@ -112,6 +112,6 @@ describe('guardCode', () => {
   it('survives a trailing line comment and names the source', () => {
     const code = guardCode('ran.push("yes") // done', test, 'r 1');
     expect(run(code, 'https://app.test/')).toEqual(['yes']);
-    expect(code.endsWith('//# sourceURL=detour-r%201.js')).toBe(true);
+    expect(code.endsWith('//# sourceURL=overwire-r%201.js')).toBe(true);
   });
 });

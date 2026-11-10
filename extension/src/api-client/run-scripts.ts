@@ -1,5 +1,7 @@
 import {
   isScriptRunResult,
+  SCRIPT_RESULT_TYPE,
+  SCRIPT_RUN_TYPE,
   SCRIPT_TIMEOUT_MS,
   withScriptTimeout,
   type ScriptPhase,
@@ -26,7 +28,7 @@ export interface RunScriptOptions {
 export async function runSandboxedScript(options: RunScriptOptions): Promise<ScriptRunResult> {
   const code = options.code.trim();
   if (code === '') {
-    return { type: 'detour-api-script-result', id: 'skip', ok: true, tests: [] };
+    return { type: SCRIPT_RESULT_TYPE, id: 'skip', ok: true, tests: [] };
   }
 
   const doc = options.document ?? globalThis.document;
@@ -46,7 +48,7 @@ export async function runSandboxedScript(options: RunScriptOptions): Promise<Scr
       };
       const onLoad = () => {
         const payload: ScriptRunRequest = {
-          type: 'detour-api-script-run',
+          type: SCRIPT_RUN_TYPE,
           id,
           phase: options.phase,
           code: options.code,
@@ -80,7 +82,7 @@ export async function runSandboxedScript(options: RunScriptOptions): Promise<Scr
   } catch (err) {
     iframe.remove();
     return {
-      type: 'detour-api-script-result',
+      type: SCRIPT_RESULT_TYPE,
       id,
       ok: false,
       error: err instanceof Error ? err.message : String(err),

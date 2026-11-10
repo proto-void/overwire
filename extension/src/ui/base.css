@@ -262,7 +262,7 @@ input::placeholder {
 }
 
 .status-pill.off,
-.status-pill.detour-off,
+.status-pill.off-global,
 .status-pill.not-applied {
   background: var(--status-off-bg);
   color: var(--status-off);
