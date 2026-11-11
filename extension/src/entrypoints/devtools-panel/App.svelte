@@ -79,7 +79,7 @@
 
 <main>
   <header>
-    <h1>Detour</h1>
+    <h1>Overwire</h1>
     {#if devtools}<ThemeToggle {area} />{/if}
   </header>
 

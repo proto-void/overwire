@@ -31,8 +31,7 @@ filesToUpdate.forEach(filePath => {
 console.log('📦 Building and packaging default-brand (overwire) extension zip...');
 try {
   execSync('corepack pnpm --filter @overwire/extension zip', { stdio: 'inherit' });
-  console.log(`\n🎉 Success! Chrome zip (default brand):\n👉 extension/.output/overwire/overwire-${newVersion}-chrome.zip`);
-  console.log(`Detour flavor: BRAND=detour corepack pnpm --filter @overwire/extension zip → extension/.output/detour/detour-${newVersion}-chrome.zip`);
+  console.log(`\n🎉 Success! Chrome zip:\n👉 extension/.output/overwire/overwire-${newVersion}-chrome.zip`);
 } catch (error) {
   console.error('❌ Build pipeline failed:', error.message);
 }

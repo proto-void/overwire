@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brandName } from '../../ui/brand-config';
   import { browser } from 'wxt/browser';
   import { CODEGEN_TARGETS, generateCode, type CodegenTarget } from '../../api-client/codegen';
   import { diffResponses } from '../../api-client/diff';
@@ -426,7 +427,7 @@
   {/if}
 
   <div class="synergy row">
-    <button type="button" class="btn" onclick={saveAsMock}>Save response as Detour mock</button>
+    <button type="button" class="btn" onclick={saveAsMock}>Save response as {brandName} mock</button>
     <button type="button" class="btn" onclick={saveAsRedirect}>Redirect this to localhost</button>
   </div>
   {#if statusMessage}<p class="status" role="status">{statusMessage}</p>{/if}

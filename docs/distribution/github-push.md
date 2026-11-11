@@ -1,4 +1,4 @@
-# Push Detour to GitHub (Protovoid org)
+# Push Overwire to GitHub (Protovoid org)
 
 Use your **Protovoid** organization account (not `HamzaKhan-Rogers`). Create empty public repos first if they do not exist: `proto-void/overwire` and `proto-void/overwire-web`.
 
@@ -23,12 +23,13 @@ git push origin v0.1.0
 
 Chrome zip for manual CWS upload (already built locally):
 
-`extension/.output/detour/detour-0.1.0-chrome.zip`
+`extension/.output/overwire/overwire-<version>-chrome.zip`
 
 Privacy / homepage for the store listing:
 
-- https://detour.protovoid.com/privacy/
-- https://detour.protovoid.com
+- https://overwire.protovoid.com/privacy/
+- https://overwire.protovoid.com
+  (legacy `detour.protovoid.com` remains dual-host until Hamza deploys the 301 Worker)
 
 ## Product site → `proto-void/overwire-web`
 

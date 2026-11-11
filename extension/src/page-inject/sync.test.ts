@@ -119,7 +119,7 @@ describe('syncPage', () => {
     const { api } = fakeApi();
     api.scripting.registerContentScripts.mockRejectedValueOnce(new Error('boom'));
     const result = await syncPage(api, memoryArea(), plan(ws(js('x'), css)));
-    expect(result.errors).toEqual(["Couldn't register Detour's page scripts: boom"]);
+    expect(result.errors).toEqual(["Couldn't register Overwire's page scripts: boom"]);
     expect(result.refused).toEqual([expect.objectContaining({ ruleId: 'r1', reason: 'inject-failed' })]);
     expect(result.injected.map((i) => i.ruleId)).toEqual(['r0']);
   });

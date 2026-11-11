@@ -34,10 +34,10 @@ describe('DevTools page inspection', () => {
     expect(inspectPage(workspace, 'https://other.example/x', on).headline).toBe('No rule matches.');
   });
 
-  it('keeps the result and says when Detour is off', () => {
+  it('keeps the result and says when Overwire is off', () => {
     const view = inspectPage(workspace, 'https://cdn.example.com/app.js', { enabled: false, userScripts: true });
     expect(view.headline).toBe('This rule wins.');
-    expect(view.notes[0]).toMatch(/Detour is off/);
+    expect(view.notes[0]).toMatch(/Overwire is off/);
   });
 
   it('does not pretend to inspect browser pages', () => {

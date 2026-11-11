@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { brandName } from '../../ui/brand-config';
   import { browser } from 'wxt/browser';
   import { applyRules } from '../../api-client/apply-rules';
   import {
@@ -1062,7 +1063,7 @@
   <header class="head">
     <div>
       <h2 id="tester-heading">API Tester</h2>
-      <p class="sub">Send requests to any API, including localhost, and see which Detour rules apply.</p>
+      <p class="sub">Send requests to any API, including localhost, and see which {brandName} rules apply.</p>
     </div>
     <div class="head-actions">
       <label class="env">
@@ -2264,7 +2265,7 @@
             {#each rulesView.notes as note, i (i)}
               <p class="note">{note}</p>
             {/each}
-            {#if !enabled}<p class="note">Detour is off, so this is not live.</p>{/if}
+            {#if !enabled}<p class="note">{brandName} is off, so this is not live.</p>{/if}
             {#if dirty}<p class="note">Includes unsaved rule edits.</p>{/if}
             <p class="note">Effective Apply rules: {effectiveApply ? 'On' : 'Off'}.</p>
           </div>

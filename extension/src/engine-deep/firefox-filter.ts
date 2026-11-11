@@ -255,7 +255,7 @@ export function createFirefoxBodyFilter(webRequest: WebRequestApi, onMatch?: (no
           (bytes) => tryRewriteHtmlBytes(bytes, docTypes.get(requestId), details.url, pageHost(details), rules, (candidate) => loadRuleBytes(candidate, readFile, prepared)),
         );
       } catch (e) {
-        console.error('Detour: could not filter a document', e instanceof Error ? e.message : e);
+        console.error('Overwire: could not filter a document', e instanceof Error ? e.message : e);
       }
       return;
     }
@@ -272,7 +272,7 @@ export function createFirefoxBodyFilter(webRequest: WebRequestApi, onMatch?: (no
       pipeReplacement(webRequest.filterResponseData(details.requestId), rule.body);
       onMatch?.({ groupId: rule.groupId, ruleId: rule.ruleId, url: details.url, tabId: details.tabId ?? -1 });
     } catch (e) {
-      console.error('Detour: could not filter a response', e instanceof Error ? e.message : e);
+      console.error('Overwire: could not filter a response', e instanceof Error ? e.message : e);
     }
   };
 

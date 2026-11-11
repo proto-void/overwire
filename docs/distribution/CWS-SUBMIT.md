@@ -350,7 +350,7 @@ Listing is live. Repo/site store-id work:
 
 1. **Done:** `chromeStoreUrl` in `/Users/hamzakhan/Project/overwire-web/site.config.ts` → live CWS URL above. Redeploy when ready: `cd ~/Project/overwire-web && npm run deploy` (needs Wrangler login — see [overwire-web docs/SEO.md](/Users/hamzakhan/Project/overwire-web/docs/SEO.md)).
 2. **Done:** Public README Install section + Chrome Web Store badge point at the live URL (product name Overwire in docs).
-3. **Done:** Store id on `extension/brands/detour` + `overwire` brand configs and CLI store id lists so NM `allowed_origins` pick it up on helper install.
+3. **Done:** Store id on `extension/brands/overwire` brand config and CLI store id lists so NM `allowed_origins` pick it up on helper install.
 4. **Manual / optional:** Protovoid `/products/` Overwire CTA already points at product/GitHub; keep CWS link if install-from-store is desired.
 5. **Manual / optional:** Google Search Console for `overwire.protovoid.com` → submit `sitemap-index.xml` (legacy property may still be `detour.protovoid.com` during dual-host; **DNS gate clean**; **301 still human-deferred**).
 6. **Done (Submit):** Listing paste + 0.1.3 package upload + Submit for review (Hamza, 2026-11-10). Keep this packet for rejection replies / future bumps.

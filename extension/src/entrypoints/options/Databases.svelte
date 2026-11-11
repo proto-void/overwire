@@ -73,7 +73,7 @@
     type NativeRpcClient,
   } from '../../db-client/protocol';
   import { buildHostConfig, connectionFromUrl } from '../../db-client/url';
-  import { nativeHostName } from '../../ui/brand';
+  import { brandName, nativeHostName } from '../../ui/brand';
 
   const area = browser.storage.local;
   const IDLE_DEFAULT_MS = 15 * 60 * 1000;
@@ -468,7 +468,7 @@
         if (gen !== browseGeneration) return;
         browseMsgIsError = true;
         browseMsg =
-          'This helper build is missing Browse (no pickFile). Re-run Install Detour Helper from the OS pack root (Reload alone is not enough), then Start again. Or paste an absolute path.';
+          'This helper build is missing Browse (no pickFile). Re-run Install Overwire Helper from the OS pack root (Reload alone is not enough), then Start again. Or paste an absolute path.';
         return;
       }
       if (gen !== browseGeneration) return;
@@ -501,7 +501,7 @@
         browseMsgIsError = true;
         if (/unknown method.*pickFile/i.test(msg)) {
           browseMsg =
-            'Helper is outdated (no pickFile). Re-run Install Detour Helper from the pack root, Reload the extension, Start, then try Browse again. Or paste an absolute path.';
+            'Helper is outdated (no pickFile). Re-run Install Overwire Helper from the pack root, Reload the extension, Start, then try Browse again. Or paste an absolute path.';
           return;
         }
         browseMsg = `${msg} You can also paste the absolute path into the text field.`;
@@ -1908,7 +1908,7 @@
             type="button"
             class="btn primary"
             disabled={helperStatus === 'connecting'}
-            title="Local process Detour uses to reach your databases."
+            title="Local process {brandName} uses to reach your databases."
             onclick={() => void startHelper()}
           >
             {helperStatus === 'connecting' ? 'Starting…' : 'Start database helper'}
@@ -1916,7 +1916,7 @@
           <span class="helper-hint"
             >{helperStatus === 'connecting'
               ? 'Starting local helper…'
-              : 'Local process Detour uses to reach your databases.'}</span
+              : `Local process ${brandName} uses to reach your databases.`}</span
           >
         </div>
       {:else if helperStatus === 'missing'}
@@ -1944,20 +1944,20 @@
 
   {#if helperStatus === 'missing'}
     <div class="setup card-block" role="region" aria-label="Install database helper">
-      <h3>Install the Detour database helper (one time)</h3>
+      <h3>Install the {brandName} database helper (one time)</h3>
       <p>
-        Browsers can’t talk to databases directly, so a small program on your computer does it. Detour starts and stops it
+        Browsers can’t talk to databases directly, so a small program on your computer does it. {brandName} starts and stops it
         for you after this install. You do <strong>not</strong> need Node for the OS pack.
       </p>
       <ol>
         <li>
           Download the <strong>{packOsLabel}</strong> pack
-          (<code>detour-*-{packSlug}.zip</code> or <code>.tar.gz</code>) from
+          (<code>overwire-*-{packSlug}.zip</code> or <code>.tar.gz</code>) from
           <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">GitHub Releases</a>.
         </li>
         <li>Unzip it. If you haven’t already, load the pack’s <code>extension/</code> folder unpacked (Developer mode).</li>
         <li>
-          Double-click <strong>Install Detour Helper</strong> in the pack. On first run, allow Gatekeeper / SmartScreen if
+          Double-click <strong>Install Overwire Helper</strong> in the pack. On first run, allow Gatekeeper / SmartScreen if
           prompted ($0 unsigned builds).
         </li>
         <li>
@@ -1969,10 +1969,10 @@
       <details class="dev-install">
         <summary>Developers (Node / pnpm)</summary>
         <p>
-          From a Detour repo checkout with Node 24+:
-          <code>corepack pnpm --filter @detour/cli exec detour db install</code>
+          From an Overwire repo checkout with Node 24+:
+          <code>corepack pnpm --filter @overwire/cli exec overwire db install</code>
           Optional: <code>--extension-id=…</code> to add an extra Chromium id. Uninstall:
-          <code>detour db uninstall</code>.
+          <code>overwire db uninstall</code>.
         </p>
       </details>
       {#if helperError}
@@ -1981,7 +1981,7 @@
     </div>
   {:else if helperStatus === 'needs_reload'}
     <div class="setup card-block" role="region" aria-label="Reload extension for database helper">
-      <h3>One more step: reload Detour</h3>
+      <h3>One more step: reload {brandName}</h3>
       <p>
         Chrome needs a one-time reload after enabling the database helper. Your helper install is OK — this is not a
         missing install.

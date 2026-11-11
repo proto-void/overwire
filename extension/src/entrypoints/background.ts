@@ -76,10 +76,10 @@ export default defineBackground(() => {
   const refresh = createCoalescer(async () => {
     const report = await syncRules(dnr, area, undefined, page, bodyEngine);
     if (report.refused.length > 0 || report.errors.length > 0) {
-      console.warn(`Detour: ${report.applied.length} network and ${report.injected?.length ?? 0} page rule(s) applied, ${report.refused.length} refused`, report);
+      console.warn(`${brandName}: ${report.applied.length} network and ${report.injected?.length ?? 0} page rule(s) applied, ${report.refused.length} refused`, report);
     }
   });
-  const refreshSafely = () => refresh().catch((e) => console.error('Detour: failed to apply rules', e));
+  const refreshSafely = () => refresh().catch((e) => console.error(`${brandName}: failed to apply rules`, e));
 
   // Dynamic rules persist across restarts but user scripts are cleared on update, so re-apply on both.
   // Also rewrite legacy detour-api-run:* alarms to overwire-api-run:*.
@@ -120,7 +120,7 @@ export default defineBackground(() => {
       onMatch: (match) => {
         void matches.note(match);
       },
-    }).catch((e) => console.error('Detour: page message failed', e));
+    }).catch((e) => console.error(`${brandName}: page message failed`, e));
   });
 
   // API Tester scheduled runs (Slice B) — only while the browser is open.

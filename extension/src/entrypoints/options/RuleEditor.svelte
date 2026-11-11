@@ -405,7 +405,7 @@
         {/snippet}
       </Field>
       <p class="muted">
-        Relative to the folder you passed to <code>detour bridge</code>. Connect Local Bridge, then save. After Allow debugger (Chrome) or Allow response rewriting (Firefox), Detour replaces the response and the address stays the same.
+        Relative to the folder you passed to <code>overwire bridge</code>. Connect Local Bridge, then save. After Allow debugger (Chrome) or Allow response rewriting (Firefox), Overwire replaces the response and the address stays the same.
       </p>
     {/if}
   {:else}

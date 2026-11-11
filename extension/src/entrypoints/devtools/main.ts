@@ -5,4 +5,4 @@ interface DevtoolsPanels {
 }
 
 const devtools = (browser as unknown as { devtools?: DevtoolsPanels }).devtools;
-if (devtools) void devtools.panels.create('Detour', '', 'devtools-panel.html');
+if (devtools) void devtools.panels.create('Overwire', '', 'devtools-panel.html');

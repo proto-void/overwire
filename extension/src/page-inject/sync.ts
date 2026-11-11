@@ -104,7 +104,7 @@ export async function syncPage(api: PageApi, area: StorageAreaLike, plan: PagePl
     if (missing.length > 0) await api.scripting.registerContentScripts(missing);
   } catch (e) {
     // Everything except inline JS (user scripts) depends on these registrations.
-    const error = `Couldn't register Detour's page scripts: ${message(e)}`;
+    const error = `Couldn't register Overwire's page scripts: ${message(e)}`;
     errors.push(error);
     const inline = new Set(plan.userScripts.map((u) => u.ruleId));
     for (const i of injected) if (!inline.has(i.ruleId)) refused.push({ groupId: i.groupId, ruleId: i.ruleId, reason: 'inject-failed', message: error });

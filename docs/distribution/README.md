@@ -1,8 +1,8 @@
 # Distribution
 
-Detour is free and MIT. CI and packaging use GitHub Actions on the free tier. There is no Detour server and no store API token in this repo.
+Overwire is free and MIT (formerly Detour). CI and packaging use GitHub Actions on the free tier. There is no Overwire server and no store API token in this repo.
 
-The installed extension name is **Detour**. Store listings use **Detour** (short description clarifies resource overriding so it is not confused with the unrelated Firefox proxy add-on). See [store-listing.md](store-listing.md), [permissions.md](permissions.md), [privacy.md](privacy.md), and [support.md](support.md) (Help & Community policy; canonical URL `https://overwire.protovoid.com/support/`).
+The installed extension name is **Overwire**. See [store-listing.md](store-listing.md), [permissions.md](permissions.md), [privacy.md](privacy.md), and [support.md](support.md) (Help & Community policy; canonical URL `https://overwire.protovoid.com/support/`).
 
 ## Run the same checks as CI
 
@@ -10,19 +10,19 @@ From the repo root, with Node 24 (see `/.node-version`) and pnpm 12.9.1 via Core
 
 ```sh
 corepack pnpm install --frozen-lockfile
-corepack pnpm --filter @detour/cli test
-corepack pnpm --filter @detour/cli typecheck
-corepack pnpm --filter @detour/extension test
-corepack pnpm --filter @detour/extension typecheck
-corepack pnpm --filter @detour/extension build
-corepack pnpm --filter @detour/extension build:firefox
+corepack pnpm --filter @overwire/cli test
+corepack pnpm --filter @overwire/cli typecheck
+corepack pnpm --filter @overwire/extension test
+corepack pnpm --filter @overwire/extension typecheck
+corepack pnpm --filter @overwire/extension build
+corepack pnpm --filter @overwire/extension build:firefox
 cd extension
 CHROME=$(node scripts/install-chrome.mjs) corepack pnpm e2e:chrome
 corepack pnpm zip
 corepack pnpm zip:firefox
 ```
 
-The store zips are the extension only. Local Bridge is `corepack pnpm --filter @detour/cli exec node --experimental-strip-types src/cli.ts bridge <folder>` (see `cli/README.md`). It is not published to npm from CI.
+The store zips are the extension only. Local Bridge is `corepack pnpm --filter @overwire/cli exec node --experimental-strip-types src/cli.ts bridge <folder>` (see `cli/README.md`). It is not published to npm from CI.
 
 `corepack pnpm ci` runs that sequence and expects `CHROME` to be set already. `scripts/install-chrome.mjs` prints a Chrome for Testing **stable** binary (cached under `~/.cache/puppeteer` unless `CHROME_CACHE` is set). On Linux, install its libraries once as root:
 
@@ -34,49 +34,49 @@ GitHub Actions sets `CI`, which makes the smoke test pass `--no-sandbox`, `--dis
 
 ## Packages
 
-`zip` and `zip:firefox` rebuild, then write into `extension/.output/detour/` (gitignored):
+`zip` and `zip:firefox` rebuild, then write into `extension/.output/overwire/` (gitignored). Sole in-tree brand is Overwire (`BRAND=detour` rejected).
 
 | File | Use |
 |------|-----|
-| `detour-<version>-chrome.zip` | Chrome Web Store and Edge Add-ons (extension only; includes `README-load-unpacked.md`) |
-| `detour-<version>-firefox.zip` | Firefox AMO |
-| `detour-<version>-sources.zip` | AMO source upload (produced with the Firefox zip) |
+| `overwire-<version>-chrome.zip` | Chrome Web Store and Edge Add-ons (extension only; includes `README-load-unpacked.md`) |
+| `overwire-<version>-firefox.zip` | Firefox AMO |
+| `overwire-<version>-sources.zip` | AMO source upload (produced with the Firefox zip) |
 
 ### OS packs (extension + Databases helper)
 
-Self-sufficient sideload packs (ADR-029). **Not** for store upload. CI builds Detour packs.
+Self-sufficient sideload packs (ADR-029). **Not** for store upload. CI builds Overwire packs.
 
 | File | Use |
 |------|-----|
-| `detour-<version>-windows-x64.zip` | Windows + SEA helper |
-| `detour-<version>-macos-arm64.zip` | Apple Silicon + SEA helper |
-| `detour-<version>-macos-x64.zip` | Intel Mac + SEA helper |
-| `detour-<version>-linux-x64.tar.gz` | Linux x64 + SEA helper |
+| `overwire-<version>-windows-x64.zip` | Windows + SEA helper |
+| `overwire-<version>-macos-arm64.zip` | Apple Silicon + SEA helper |
+| `overwire-<version>-macos-x64.zip` | Intel Mac + SEA helper |
+| `overwire-<version>-linux-x64.tar.gz` | Linux x64 + SEA helper |
 
 Local (current machine):
 
 ```sh
-corepack pnpm --filter @detour/extension build
-corepack pnpm --filter @detour/cli sea:build
+corepack pnpm --filter @overwire/extension build
+corepack pnpm --filter @overwire/cli sea:build
 corepack pnpm pack:os
-# → cli/.packs/detour-<ver>-<os>-<arch>.zip (or .tar.gz on Linux)
+# → cli/.packs/overwire-<ver>-<os>-<arch>.zip (or .tar.gz on Linux)
 ```
 
 In-pack READMEs are generated from `cli/pack/templates/` (single source with the root README links).
 
-**QA sideload (Chrome zip):** send `detour-<version>-chrome.zip` (extension only; includes `README-load-unpacked.md` and `load-unpacked-steps.jpg`). Recipient: unzip first (do not Load unpacked the `.zip`), then in Chrome:
+**QA sideload (Chrome zip):** send `overwire-<version>-chrome.zip` (extension only; includes `README-load-unpacked.md` and `load-unpacked-steps.jpg`). Recipient: unzip first (do not Load unpacked the `.zip`), then in Chrome:
 
 1. Open `chrome://extensions`
 2. Turn on **Developer mode** (top right)
 3. Click **Load unpacked**
 4. Select the **unzipped folder** that contains `manifest.json`
 
-See the annotated screenshot in the zip (`load-unpacked-steps.jpg`) or in `extension/public/`. For Databases, use a Detour OS pack (Load unpacked → `extension/` inside the pack, then Install Helper) or `detour db install` from this repo.
+See the annotated screenshot in the zip (`load-unpacked-steps.jpg`) or in `extension/public/`. For Databases, use an Overwire OS pack (Load unpacked → `extension/` inside the pack, then Install Helper) or `overwire db install` from this repo.
 
-**Agent / local delivery DoD:** Detour `zip` only (Rogers product retired — plan 033).
+**Agent / local delivery DoD:** Overwire `zip` only (Rogers product retired — plan 033; Detour flavor removed).
 
 
-`<version>` is `extension/package.json` (`0.1.1` today). The root [LICENSE](../../LICENSE) is MIT. The sources zip excludes `node_modules`, tests, `.output`, `.wxt`, and secret-like files (`.env`, `*.pem`, `*.p12`).
+`<version>` is `extension/package.json` (`0.1.3` today). The root [LICENSE](../../LICENSE) is MIT. The sources zip excludes `node_modules`, tests, `.output`, `.wxt`, and secret-like files (`.env`, `*.pem`, `*.p12`).
 
 ## What CI does
 

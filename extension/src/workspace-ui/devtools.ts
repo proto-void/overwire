@@ -1,3 +1,4 @@
+import { brandName } from '../ui/brand-config';
 import type { Workspace } from '../rule-model/schema';
 import { describeResolution, resolveProbe, type TesterView } from './tester';
 
@@ -7,9 +8,9 @@ const BROWSER_PAGE = /^(chrome|chrome-untrusted|edge|about|devtools|moz-extensio
 export function inspectPage(workspace: Workspace, pageUrl: string, options: { enabled: boolean; userScripts: boolean }): TesterView {
   const url = pageUrl.trim();
   if (url === '') return { headline: 'Open a web page to see which rule wins.', lines: [], notes: [] };
-  if (BROWSER_PAGE.test(url)) return { headline: 'Detour does not change browser pages.', lines: [], notes: [] };
+  if (BROWSER_PAGE.test(url)) return { headline: `${brandName} does not change browser pages.`, lines: [], notes: [] };
 
   const view = describeResolution(resolveProbe(workspace, { url, resourceType: 'main_frame', userScripts: options.userScripts }));
   if (options.enabled) return view;
-  return { ...view, notes: ['Detour is off, so nothing is applied in the browser.', ...view.notes] };
+  return { ...view, notes: [`${brandName} is off, so nothing is applied in the browser.`, ...view.notes] };
 }

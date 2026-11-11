@@ -282,7 +282,7 @@ export function validateRule(rule: Rule): RuleValidation {
   }
   if (rule.action.type === 'serveLocal' && (rule.match.kind === 'regex' || /^\*+$/.test(rule.match.pattern))) {
     warnings['match.pattern'] =
-      'This pattern is very broad. After you allow response rewriting, Detour pauses every response in the tab. Without that, a pattern that also matches 127.0.0.1 is refused so the redirect cannot loop.';
+      'This pattern is very broad. After you allow response rewriting, Overwire pauses every response in the tab. Without that, a pattern that also matches 127.0.0.1 is refused so the redirect cannot loop.';
   }
   if (rule.action.type === 'modifyHeaders') {
     rule.action.request.forEach((op, i) => {

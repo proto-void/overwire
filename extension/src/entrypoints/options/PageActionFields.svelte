@@ -67,7 +67,7 @@
       <Field
         id="{id}-url"
         label="{what} URL"
-        hint={action.type === 'injectJs' ? 'Added as a <script> tag, so the page’s Content-Security-Policy decides whether it loads.' : 'Fetched by Detour and inserted as a stylesheet.'}
+        hint={action.type === 'injectJs' ? 'Added as a <script> tag, so the page’s Content-Security-Policy decides whether it loads.' : `Fetched by ${brandName} and inserted as a stylesheet.`}
         error={errorFor('action.source.url', source.url)}
       >
         {#snippet children({ describedby, invalid })}

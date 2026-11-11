@@ -112,7 +112,7 @@ export function startMatchLog(deps: MatchLogDeps): { note(match: ObservedMatch):
         await deps.action.setBadgeTextColor?.({ color: BADGE_FG, tabId });
       }
     } catch (e) {
-      console.error('Detour: badge update failed', e instanceof Error ? e.message : e);
+      console.error('Overwire: badge update failed', e instanceof Error ? e.message : e);
     }
   };
 
@@ -168,7 +168,7 @@ export function startMatchLog(deps: MatchLogDeps): { note(match: ObservedMatch):
     try {
       deps.dnr.onRuleMatchedDebug!.addListener(onDebug);
     } catch (e) {
-      console.error('Detour: match listener failed', e instanceof Error ? e.message : e);
+      console.error('Overwire: match listener failed', e instanceof Error ? e.message : e);
     }
   }
 

@@ -228,7 +228,7 @@ export function createChromeBodySession(dbg: DebuggerApi, tabs: TabsApi, onMatch
         return true;
       } catch (e) {
         if (method === 'Fetch.fulfillRequest') await dbg.sendCommand({ tabId }, 'Fetch.continueResponse', { requestId }).catch(() => {});
-        else console.error('Detour: could not continue a paused response', messageOf(e));
+        else console.error('Overwire: could not continue a paused response', messageOf(e));
         return false;
       }
     };
