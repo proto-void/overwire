@@ -33,7 +33,7 @@ describe('runCollection', () => {
       collection: col,
       iterations: 2,
       stopOnFail: true,
-      globalApplyDetour: false,
+      globalApplyRules: false,
       workspace: { groups: [] },
       scopes: {},
       skipScripts: true,
@@ -65,7 +65,7 @@ describe('runCollection', () => {
     await runCollection({
       collection: col,
       iterations: 1,
-      globalApplyDetour: false,
+      globalApplyRules: false,
       workspace: { groups: [] },
       scopes: {},
       skipScripts: true,

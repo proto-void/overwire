@@ -1,14 +1,16 @@
 import type { Refusal } from '../engine-core/compile';
+import { brandName } from '../ui/brand-config';
 import { globToRegexSource } from '../rule-model/match';
 import type { Group, InjectSource, Rule, Workspace } from '../rule-model/schema';
 import type { UrlTest } from './page-match';
 
 export const PAGE_CONFIG_KEY = 'pageConfig';
-export const USER_SCRIPT_PREFIX = 'detour-';
+export const USER_SCRIPT_PREFIX = 'overwire-';
+/** Pre-Overwire user-script ids; unregister on sync so scripts never double-inject. */
+export const LEGACY_USER_SCRIPT_PREFIX = 'detour-';
 
 /** Shown when an inline JS rule matches but the user-scripts API can't run it. */
-export const USER_SCRIPTS_UNAVAILABLE_MESSAGE =
-  'Inline JavaScript needs user scripts: turn on "Allow User Scripts" for Detour (Chrome) or grant the permission (Firefox 136+)';
+export const USER_SCRIPTS_UNAVAILABLE_MESSAGE = `Inline JavaScript needs user scripts: turn on "Allow User Scripts" for ${brandName} (Chrome) or grant the permission (Firefox 136+)`;
 
 type RunAt = 'document_start' | 'document_end' | 'document_idle';
 type Ids = { groupId: string; ruleId: string };
@@ -87,7 +89,7 @@ export function urlTest(rule: Rule, group: Group): UrlTest {
  * Side effect: the code runs in a block, so top-level `let`/`const`/`class` aren't page globals.
  */
 export function guardCode(code: string, test: UrlTest, ruleId: string): string {
-  return `if ((${GUARD})(${JSON.stringify(test)})) {\n${code}\n}\n//# sourceURL=detour-${encodeURIComponent(ruleId)}.js`;
+  return `if ((${GUARD})(${JSON.stringify(test)})) {\n${code}\n}\n//# sourceURL=overwire-${encodeURIComponent(ruleId)}.js`;
 }
 
 /** Literal source (not Function#toString, which minification can break); mirrors `testUrl` + `siteHost`. */

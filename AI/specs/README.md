@@ -1,6 +1,6 @@
 # Specs (Spec-Driven Development)
 
-**Last verified:** 2026-10-09
+**Last verified:** 2026-11-10
 
 Specs live **only** here. Status is **Draft** until a human Approves. See project skill `spec-workflow`.
 
@@ -19,6 +19,7 @@ Specs live **only** here. Status is **Draft** until a human Approves. See projec
 | 9 | [distribution](distribution.md) | **Approved — CI + packaging** (Hamza, 2026-10-07); OS packs + partner-helper public hooks (Hamza, 2026-10-09). Local Bridge and store-API upload stay out |
 | 10 | [api-client](api-client.md) | **Approved — Slices A + B + C** (Hamza, 2026-10-09) |
 | 11 | [db-client](db-client.md) | **Approved — Slices A–D + Connection options + OS packs + partner-helper public hooks** (Hamza, 2026-10-09). Plans [026](../plans/026-db-client.md)–[029](../plans/029-closed-rogers-native-helper.md) |
+| 12 | [licensing](licensing.md) | **Approved** (Hamza, 2026-11-10) — offline Ed25519 Pro/Team; MIT core ungated (ADR-032) |
 
 Capability overview: [000-capability-map.md](000-capability-map.md).
 

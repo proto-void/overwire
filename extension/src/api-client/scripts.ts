@@ -2,10 +2,16 @@
 
 export const SCRIPT_TIMEOUT_MS = 5_000;
 
+export const SCRIPT_RUN_TYPE = 'overwire-api-script-run' as const;
+export const SCRIPT_RESULT_TYPE = 'overwire-api-script-result' as const;
+/** Legacy Detour postMessage types (accepted on receive during transition). */
+export const LEGACY_SCRIPT_RUN_TYPE = 'detour-api-script-run' as const;
+export const LEGACY_SCRIPT_RESULT_TYPE = 'detour-api-script-result' as const;
+
 export type ScriptPhase = 'prerequest' | 'test';
 
 export interface ScriptRunRequest {
-  type: 'detour-api-script-run';
+  type: typeof SCRIPT_RUN_TYPE | typeof LEGACY_SCRIPT_RUN_TYPE;
   id: string;
   phase: ScriptPhase;
   code: string;
@@ -37,7 +43,7 @@ export interface ScriptTestResult {
 }
 
 export interface ScriptRunResult {
-  type: 'detour-api-script-result';
+  type: typeof SCRIPT_RESULT_TYPE | typeof LEGACY_SCRIPT_RESULT_TYPE;
   id: string;
   ok: boolean;
   error?: string;
@@ -61,7 +67,9 @@ export interface ScriptRunResult {
 }
 
 export function isScriptRunResult(data: unknown): data is ScriptRunResult {
-  return !!data && typeof data === 'object' && (data as ScriptRunResult).type === 'detour-api-script-result';
+  if (!data || typeof data !== 'object') return false;
+  const type = (data as ScriptRunResult).type;
+  return type === SCRIPT_RESULT_TYPE || type === LEGACY_SCRIPT_RESULT_TYPE;
 }
 
 /**

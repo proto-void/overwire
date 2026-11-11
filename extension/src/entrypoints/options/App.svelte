@@ -20,12 +20,22 @@
   import { serializeExport } from '../../rule-model/transfer';
   import { announce, live } from '../../ui/announcer.svelte';
   import { brandName, markUrl } from '../../ui/brand';
+  import { dismissRebrandBanner, REBRAND_BANNER_COPY, shouldShowRebrandBanner } from '../../ui/rebrand';
   import BrandLockup from '../../ui/BrandLockup.svelte';
   import Drawer from '../../ui/Drawer.svelte';
   import Icon from '../../ui/icons/Icon.svelte';
+  import LicenseBadge from '../../ui/LicenseBadge.svelte';
+  import LicenseModal from '../../ui/LicenseModal.svelte';
   import Switch from '../../ui/Switch.svelte';
   import ThemeToggle from '../../ui/ThemeToggle.svelte';
   import Toast from '../../ui/Toast.svelte';
+  import {
+    LICENSE_KEY_STORAGE,
+    LICENSE_STATUS_STORAGE,
+    loadLicenseStatus,
+    refreshLicenseState,
+    type LicenseStatus,
+  } from '../../licensing/verify';
   import { BODY_CONSENT_KEY, bodyPermissions, workspaceHasBodyRules, workspaceHasServeLocal } from '../../engine-deep/permissions';
   import {
     ACTION_INFO,
@@ -93,8 +103,14 @@
   let activeRuleId = $state<string | null>(null);
   let bridgeConnected = $state(false);
   let dismissed = $state<Record<string, boolean>>({});
+  let showRebrandBanner = $state(false);
   let matchLogCount = $state(0);
   let headerEl: HTMLElement | undefined = $state();
+  let licenseStatus: LicenseStatus | undefined = $state();
+  let licenseModalOpen = $state(false);
+  const managedStorage =
+    (browser.storage as unknown as { managed?: { get: typeof browser.storage.local.get } }).managed ??
+    null;
 
   const validation = $derived(validateWorkspace(draft));
   const dirty = $derived(saved !== undefined && isDirty(draft, saved));
@@ -443,22 +459,37 @@
     };
   });
 
+  async function dismissRebrand() {
+    showRebrandBanner = false;
+    await dismissRebrandBanner(area);
+  }
+
   onMount(() => {
     tab = tabFromHash(location.hash);
     void loadSaved();
     void loadReport();
     void loadEnabled(area).then((value) => (enabled = value));
     void loadAutosave(area).then((value) => (autosave = value));
+    void shouldShowRebrandBanner(area).then((show) => (showRebrandBanner = show));
     void loadPageFailures();
     void checkUserScripts();
     void checkBodyPermission();
     void refreshBridge();
     void refreshMatchCount();
+    void refreshLicenseState({ local: area, managed: managedStorage })
+      .then((s) => (licenseStatus = s))
+      .catch(() => loadLicenseStatus(area).then((s) => (licenseStatus = s)));
 
     const onChanged = (changes: Record<string, unknown>, areaName: string) => {
       if (areaName === 'session') {
         if (PAGE_FAILURES_KEY in changes) void loadPageFailures();
         if (MATCH_LOG_KEY in changes) void refreshMatchCount();
+      }
+      if (
+        (areaName === 'local' || areaName === 'managed') &&
+        (LICENSE_KEY_STORAGE in changes || LICENSE_STATUS_STORAGE in changes)
+      ) {
+        void loadLicenseStatus(area).then((s) => (licenseStatus = s));
       }
       if (areaName !== 'local') return;
       if (APPLY_REPORT_KEY in changes) void loadReport();
@@ -517,6 +548,7 @@
   <div class="brand">
     <h1><BrandLockup size={22} /></h1>
     <span class="pill version">v{version}</span>
+    <LicenseBadge status={licenseStatus} onclick={() => (licenseModalOpen = true)} />
   </div>
   <div class="actions">
     <div class="save-wrap">
@@ -549,8 +581,29 @@
 </header>
 
 <div class="visually-hidden" aria-live="polite">{live.message}</div>
+<LicenseModal
+  open={licenseModalOpen}
+  {area}
+  managed={managedStorage}
+  status={licenseStatus}
+  onclose={() => (licenseModalOpen = false)}
+  onstatus={(next) => (licenseStatus = next)}
+/>
 {#if toastOpen}
-  <Toast message={toastMessage} ondismiss={dismissToast} onundo={toastCanUndo ? undoAutosave : undefined} />
+  <Toast
+    message={toastMessage}
+    ondismiss={dismissToast}
+    onundo={toastCanUndo ? undoAutosave : undefined}
+    durationMs={toastCanUndo ? 12000 : 4000}
+  />
+{/if}
+
+{#if showRebrandBanner}
+  <div class="banner" role="status" data-testid="rebrand-banner">
+    <Icon name="shield" />
+    <p>{REBRAND_BANNER_COPY}</p>
+    <button type="button" class="btn" onclick={dismissRebrand}>Got it</button>
+  </div>
 {/if}
 
 {#if !enabled && !dismissed.off}

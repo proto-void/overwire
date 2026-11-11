@@ -2,6 +2,7 @@
   import { MOCK_METHODS, RUN_AT, type Action, type InjectSource } from '../../rule-model/schema';
   import CodeEditor from '../../ui/CodeEditor.svelte';
   import Field from '../../ui/Field.svelte';
+  import { brandName } from '../../ui/brand-config';
   import { codeLanguage, type RuleValidation } from '../../workspace-ui/editor';
 
   type InjectAction = Extract<Action, { type: 'injectJs' | 'injectCss' }>;
@@ -106,7 +107,7 @@
       {/snippet}
     </Field>
     {#if action.type === 'injectJs' && !userScriptsReady}
-      <p class="note warning" role="note">Inline JavaScript needs user scripts turned on for Detour — see the notice at the top of the page.</p>
+      <p class="note warning" role="note">Inline JavaScript needs user scripts turned on for {brandName} — see the notice at the top of the page.</p>
     {/if}
   {/if}
 

@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "Overwire",
+      "path": "."
+    },
+    {
+      "name": "overwire-web",
+      "path": "../Project/overwire-web"
+    },
+    {
+      "path": "../Project/protovoid-web"
+    }
+  ],
+  "settings": {}
+}

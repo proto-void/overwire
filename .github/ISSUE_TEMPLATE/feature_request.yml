@@ -1,0 +1,77 @@
+name: 💡 Feature Request
+description: Suggest a local-only improvement (actions, recipes, bridge, workbench). Cloud sync is out of scope.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Overwire is a **zero-account, local-first** utility maintained by one person.
+
+        **In scope:** local actions, recipes, matching, Workbench / API Tester / Databases / Local Bridge, and other on-device workflows.
+
+        **Out of scope (will close):** cloud sync, remote tracking servers, accounts / multi-device sync, Slack / Discord / email **1:1 support**, or anything that needs a hosted Overwire backend.
+
+        How-to questions → **[Discussions](https://github.com/proto-void/overwire/discussions)**.
+        Policy → [Help & Community](https://overwire.protovoid.com/support/).
+
+  - type: checkboxes
+    id: scope_ack
+    attributes:
+      label: Scope check
+      description: Confirm this stays local-only.
+      options:
+        - label: This idea works fully on-device (no Overwire accounts, cloud sync, or remote Overwire servers).
+          required: true
+        - label: I understand there is no Slack / Discord / email 1:1 support promise.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: The workflow pain, not just the feature name.
+      placeholder: I often need to …
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed local-only idea
+      description: New local action, recipe, bridge enhancement, UI polish, etc.
+      placeholder: Add a local recipe that …
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Existing rules, recipes, Local Bridge, or other tools you already tried.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Matching / overrides
+        - Recipes / actions
+        - Workbench
+        - API Tester
+        - Databases
+        - Local Bridge / native helper
+        - Import / export
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      description: Screens, mock flows, or links (no secrets). Filing an issue does not guarantee implementation or a reply timeline.
+    validations:
+      required: false

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { loadDbClientState, saveDbClientState } from './storage';
+import { loadDbClientState, saveDbClientState, stripQueryTabRowsForPersist } from './storage';
 import { defaultDbUiPrefs, emptyDbClientState, migrateConnection, newId } from './model';
 
 describe('db client storage', () => {
@@ -111,6 +111,45 @@ describe('db client storage', () => {
       expect(loaded.value.queryTabs?.[0]?.lastResult).toBeNull();
       expect(loaded.value.activeQueryTabId).toBe('qtab_1');
     }
+  });
+
+  it('strips result rows before writing queryTabs to storage', async () => {
+    const area = fakeBrowser.storage.local;
+    await area.clear();
+    const state = emptyDbClientState();
+    state.queryTabs = [
+      {
+        id: 'qtab_big',
+        name: 'Big',
+        body: 'SELECT * FROM t',
+        connectionId: null,
+        collectionQueryId: null,
+        resultSets: [
+          {
+            columns: ['id', 'payload'],
+            rows: Array.from({ length: 50 }, (_, i) => [i, { n: i }]),
+            timingMs: 12,
+            messages: [],
+            warnings: [],
+            pageToken: 'next',
+            lastStatement: 'SELECT * FROM t',
+          },
+        ],
+        activeResultIndex: 0,
+        batchMessages: [],
+        lastResult: null,
+      },
+    ];
+    state.activeQueryTabId = 'qtab_big';
+    await saveDbClientState(area, state);
+    const bag = (await area.get('dbSettings')) as {
+      dbSettings: { queryTabs?: Array<{ resultSets?: Array<{ rows?: unknown[]; columns?: string[]; pageToken?: string | null }> }> };
+    };
+    const rs = bag.dbSettings.queryTabs?.[0]?.resultSets?.[0];
+    expect(rs?.columns).toEqual(['id', 'payload']);
+    expect(rs?.rows).toEqual([]);
+    expect(rs?.pageToken).toBe('next');
+    expect(stripQueryTabRowsForPersist(state.queryTabs)[0]?.resultSets?.[0]?.rows).toEqual([]);
   });
 
   it('migrates missing ui/queryTabs on empty settings', async () => {

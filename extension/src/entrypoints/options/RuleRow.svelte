@@ -52,7 +52,7 @@
     unsaved: 'Unsaved',
     off: 'Off',
     pending: 'Applying',
-    'detour-off': 'Detour is off',
+    'off-global': 'Extension is off',
     applied: 'Applied',
     refused: 'Refused',
     failing: 'Failing',
@@ -78,7 +78,7 @@
           : 'unsaved'
         : status.kind === 'applied'
           ? 'applied'
-          : status.kind === 'off' || status.kind === 'detour-off' || status.kind === 'not-applied'
+          : status.kind === 'off' || status.kind === 'off-global' || status.kind === 'not-applied'
             ? status.kind === 'off'
               ? 'off'
               : status.kind

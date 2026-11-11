@@ -33,7 +33,7 @@ describe('parseArgs', () => {
       extensionId: 'abcdefghijklmnopabcdefghijklmnop',
       firefox: true,
       dryRun: false,
-      brand: 'detour',
+      brand: 'overwire',
       sea: false,
     });
     assert.deepEqual(parseArgs(['db', 'uninstall']), { command: 'db-uninstall', sea: false });
@@ -46,9 +46,16 @@ describe('parseArgs', () => {
       extensionId: undefined,
       firefox: true,
       dryRun: true,
-      brand: 'detour',
+      brand: 'overwire',
       sea: true,
     });
+  });
+
+  it('treats browser native-messaging origin argv as db-host (SEA Chrome/Firefox spawn)', () => {
+    assert.deepEqual(parseArgs(['chrome-extension://hegphfgboahkhkpiglcccnkbdpddpemj/']), {
+      command: 'db-host',
+    });
+    assert.deepEqual(parseArgs(['moz-extension://abcd-1234/']), { command: 'db-host' });
   });
 });
 

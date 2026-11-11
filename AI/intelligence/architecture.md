@@ -1,6 +1,6 @@
 # Architecture
 
-**Last verified:** 2026-10-23 (Databases — env lifecycle order + Connection focus/sort polish)
+**Last verified:** 2026-11-10 (default BRAND=overwire cutover; content-script ids; licensing e-core; ADR-031/032)
 
 ## Pipeline
 
@@ -30,7 +30,9 @@ Workbench (separate from RuleCompiler):
 | `observability` | Toolbar badge and session match log (no rule-body telemetry) | `extension/src/observability/` |
 | `distribution` | Store listing docs, permission rationale, CI and zip artifacts | `.github/workflows/ci.yml`, `docs/distribution/`, `extension/scripts/install-chrome.mjs` |
 | `api-client` | API Tester A–C: collections, send, scripts, dual-scope Apply Detour; runner/power; OAuth/SigV4/Digest, cookies, GraphQL/WS/SSE, visualizer, folder sync, capture | `extension/src/api-client/` + `ApiTester.svelte` + `ApiTesterPower.svelte` + `ApiTesterAdvanced.svelte` |
-| `db-client` | Databases workbench + JSON-RPC to brand `nativeHostName` (default `com.detour.db`) | `extension/src/db-client/` + `cli/src/db/` + `Databases.svelte` + `entrypoints/options/db/*` (A–D + plans 034–036 UX) |
+| `db-client` | Databases workbench + JSON-RPC to brand `nativeHostName` (Detour default `com.detour.db`; Overwire target `com.overwire.db`) | `extension/src/db-client/` + `cli/src/db/` + `Databases.svelte` + `entrypoints/options/db/*` (A–D + plans 034–036 UX) |
+| Brand flavors | Build-time `DETOUR_BRAND` → `extension/brands/<slug>/` (committed: `detour`, `overwire`, `_template`) | `wxt.config.ts`, `virtual:brand-tokens`, `@wxt-dev/auto-icons` |
+| `licensing` | Offline Ed25519 OWPRO verify; LicenseBadge/Modal; MIT core ungated (Approved) | `extension/src/licensing/verify.ts` + `ui/LicenseBadge.svelte` + `ui/LicenseModal.svelte`; public key `LICENSE_VERIFY_PUBLIC_KEY` / `import.meta.env.LICENSE_VERIFY_PUBLIC_KEY`; Stripe webhook template `detour-web/workers/license-webhook/` |
 
 ## Databases helper (Slices A–D + Connection options + partner hooks, ADR-027/029/030)
 
@@ -96,9 +98,10 @@ enabled workspace
   → planPage → userScripts[] (inline JS) + pageConfig { mocks, styles, scripts }
   → syncPage (inside syncRules): write storage.local.pageConfig, then
        register content scripts only while needed:
-         detour-bridge  ISOLATED  document_start  allFrames  (CSS, script URLs, mock config)
-         detour-mock    MAIN      document_start  allFrames  (while any mock is enabled)
-       replace Detour user scripts (inline JS)
+         overwire-bridge  ISOLATED  document_start  allFrames  (CSS, script URLs, mock config)
+         overwire-mock    MAIN      document_start  allFrames  (while any mock is enabled)
+         (unregister legacy detour-bridge / detour-mock on every sync)
+       replace Overwire user scripts (inline JS; also unregister legacy detour-* ids)
   → applyReport gains injected[{groupId,ruleId,kind}] and page refusals
 ```
 
@@ -151,7 +154,7 @@ enabled serveLocal { path }
 - The filename is not in the bridge URL, so a redirect pattern like `*.js` does not also match the bridge and loop. In-place does not redirect, so that loop check does not apply.
 - Refusal text, the apply report, and the match log do not contain the token or file bytes. The match log stores the page’s request URL. The token is in the redirect URL only when the rule falls back to a redirect.
 - No `--host`. The filesystem root is refused. Symlinks that leave the folder are 404.
-- Inline `overrideBody` is unchanged as a rule action. While either that rule or an in-place `serveLocal` rule is armed, HTML documents get a SHA-384 `integrity` of the replacement on matching script and stylesheet tags (ADR-014). The same list is embedded in `<meta name="detour-sri">` and a MAIN-world `document_start` hook applies it when page JavaScript assigns `integrity` (ADR-015), passes the tag to `innerHTML` / `insertAdjacentHTML` (ADR-016), inserts markup that runs scripts through `createContextualFragment` or `setHTMLUnsafe` with `runScripts: true` (ADR-017), passes the tag to `outerHTML` / a shadow root's `innerHTML` or copies HTML `integrity` with `setAttributeNS` (ADR-018), or passes the tag to `setHTMLUnsafe` when `runScripts` is omitted or not strictly `true` (ADR-019), or passes the string to `Document.parseHTMLUnsafe` or `DOMParser.parseFromString` with type `text/html` (ADR-020), or moves an HTML `integrity` Attr with `setAttributeNode` or `setAttributeNodeNS` (ADR-021), or adopts that Attr with `setNamedItem` or `setNamedItemNS`, or writes `Attr.value`, `nodeValue`, or `textContent` after it is already on the element (ADR-022), or passes markup to `document.write` or `document.writeln` (ADR-023), or sets an iframe's `srcdoc` (ADR-024). String arguments to `document.write` are concatenated first. A non-string is left unchanged. Nodes moved from that document into a live page carry the hash. Scripting on that document stays off. The redirect fallback does not rewrite the document and does not install the hook.
+- Inline `overrideBody` is unchanged as a rule action. While either that rule or an in-place `serveLocal` rule is armed, HTML documents get a SHA-384 `integrity` of the replacement on matching script and stylesheet tags (ADR-014). The same list is embedded in `<meta name="overwire-sri">` (legacy `detour-sri` stripped on rewrite; MAIN hook prefers new meta, falls back to legacy once) and a MAIN-world `document_start` hook (`overwire-sri`, unregistering legacy `detour-sri`) applies it when page JavaScript assigns `integrity` (ADR-015), passes the tag to `innerHTML` / `insertAdjacentHTML` (ADR-016), inserts markup that runs scripts through `createContextualFragment` or `setHTMLUnsafe` with `runScripts: true` (ADR-017), passes the tag to `outerHTML` / a shadow root's `innerHTML` or copies HTML `integrity` with `setAttributeNS` (ADR-018), or passes the tag to `setHTMLUnsafe` when `runScripts` is omitted or not strictly `true` (ADR-019), or passes the string to `Document.parseHTMLUnsafe` or `DOMParser.parseFromString` with type `text/html` (ADR-020), or moves an HTML `integrity` Attr with `setAttributeNode` or `setAttributeNodeNS` (ADR-021), or adopts that Attr with `setNamedItem` or `setNamedItemNS`, or writes `Attr.value`, `nodeValue`, or `textContent` after it is already on the element (ADR-022), or passes markup to `document.write` or `document.writeln` (ADR-023), or sets an iframe's `srcdoc` (ADR-024). String arguments to `document.write` are concatenated first. A non-string is left unchanged. Nodes moved from that document into a live page carry the hash. Scripting on that document stays off. The redirect fallback does not rewrite the document and does not install the hook.
 
 ## UI (workspace-ui)
 
@@ -207,15 +210,19 @@ DNR onRuleMatchedDebug (unpacked Chromium) or getMatchedRules (packed fallback)
 
 ## Packages
 
-- `extension/` — WXT app (pnpm, standalone package)
-- `cli/` — `@detour/cli`, Node 24 type-stripping, no compile step. Root `pnpm-workspace.yaml` covers `extension/` and `cli/`
+- Root package name: `overwire`
+- `extension/` — `@overwire/extension` (WXT, pnpm)
+- `cli/` — `@overwire/cli`, Node 24 type-stripping, no compile step. Root `pnpm-workspace.yaml` covers `extension/` and `cli/`
+- Bins: `overwire`, `overwire-db-host` (+ transition `detour` alias)
+- Native host: `com.overwire.db` (install dual-registers legacy `com.detour.db`; keychain reads fall back)
 
-## Brand flavors (ADR-026)
+## Brand flavors (ADR-026 / ADR-031)
 
-- `DETOUR_BRAND` (default `detour`) loads `extension/brands/<slug>/` at build time
-- Detour zip: `corepack pnpm --filter @detour/extension zip` → `.output/detour/detour-<v>-chrome.zip`
-- **Delivery DoD:** Detour zip only. Partner Rogers product retired 2026-10-23 (plan 033); no `zip:rogers`, no private `rogers-detour`
-- Generic brand hook (`brands/<slug>/`, `DETOUR_BRAND_DIR`) remains for future partners; no Rogers slug in tree
+- `BRAND` / `DETOUR_BRAND` (default `overwire`) loads `extension/brands/<slug>/` at build time; `BRAND_DIR` / `DETOUR_BRAND_DIR` for external trees; legacy flavor `BRAND=detour`
+- Default zip: `corepack pnpm --filter @overwire/extension zip` → `.output/detour/detour-<v>-chrome.zip`
+- Overwire flavor: `BRAND=overwire … zip` → `.output/overwire/overwire-<v>-chrome.zip`
+- OS packs: `overwire-<ver>-<os>-<arch>.zip` via `@overwire/cli` `pack:os`
+- Partner Rogers product retired 2026-10-23 (plan 033); no `zip:rogers`, no private `rogers-detour`
 - UI tokens come from `brands/*/tokens.css` via `virtual:brand-tokens`; `ui/base.css` stays structural
 
-**Last verified:** 2026-10-23
+**Last verified:** 2026-11-10

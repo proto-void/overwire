@@ -1,6 +1,9 @@
 /** Mirror of cli protocol chunk helpers for the extension (no Node Buffer). */
 
-export const HOST_NAME = 'com.detour.db';
+/** Canonical Overwire native-messaging host (ADR-031). */
+export const HOST_NAME = 'com.overwire.db';
+/** Legacy Detour host — connectNative fallback for un-upgraded helpers. */
+export const LEGACY_HOST_NAME = 'com.detour.db';
 /** Must match `cli/src/db/protocol.ts` PROTOCOL_VERSION. */
 export const PROTOCOL_VERSION = 1;
 export const CHUNK_PAYLOAD_MAX = 900 * 1024;
@@ -112,18 +115,28 @@ type Pending = {
   chunks: ChunkEnvelope[];
 };
 
+export type RpcChunkProgress = {
+  requestId: string | number;
+  index: number;
+  total: number;
+};
+
 /**
  * JSON-RPC client over chrome.runtime.connectNative (see connectNativePort).
+ * When `hostName` is the Overwire host, falls back once to `com.detour.db` if the
+ * first connection disconnects before a response (un-upgraded helper).
  */
 export function createNativeRpcClient(connectNative: ConnectNative, hostName = HOST_NAME) {
   let port: NativePortLike | null = null;
+  let activeHostName = hostName;
+  let triedLegacyFallback = false;
   let nextId = 1;
   const pending = new Map<string | number, Pending>();
   let onDisconnectUser: (() => void) | undefined;
+  let onProgressUser: ((info: RpcChunkProgress) => void) | undefined;
 
-  function ensurePort(): NativePortLike {
-    if (port) return port;
-    port = connectNative(hostName);
+  function attachPort(name: string): NativePortLike {
+    const p = connectNative(name);
     const onMessage = (msg: unknown) => {
       const body = msg as { id?: string | number; result?: unknown; error?: { message: string } };
       if (body.id === undefined) return;
@@ -136,6 +149,11 @@ export function createNativeRpcClient(connectNative: ConnectNative, hostName = H
       }
       if (isChunkEnvelope(body.result)) {
         slot.chunks.push(body.result);
+        onProgressUser?.({
+          requestId: body.result.requestId ?? body.id,
+          index: body.result.index,
+          total: body.result.total,
+        });
         if (slot.chunks.length >= body.result.total) {
           pending.delete(body.id);
           try {
@@ -149,8 +167,8 @@ export function createNativeRpcClient(connectNative: ConnectNative, hostName = H
       pending.delete(body.id);
       slot.resolve(body.result);
     };
-    port.onMessage.addListener(onMessage);
-    port.onDisconnect.addListener(() => {
+    p.onMessage.addListener(onMessage);
+    p.onDisconnect.addListener(() => {
       port = null;
       for (const [id, slot] of pending) {
         pending.delete(id);
@@ -158,28 +176,62 @@ export function createNativeRpcClient(connectNative: ConnectNative, hostName = H
       }
       onDisconnectUser?.();
     });
+    return p;
+  }
+
+  function ensurePort(): NativePortLike {
+    if (port) return port;
+    port = attachPort(activeHostName);
     return port;
+  }
+
+  function maybeFallbackHost(err: unknown): boolean {
+    if (triedLegacyFallback) return false;
+    if (activeHostName === LEGACY_HOST_NAME) return false;
+    if (hostName === LEGACY_HOST_NAME) return false;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!/disconnected|not found|Specified native messaging host/i.test(msg)) return false;
+    triedLegacyFallback = true;
+    activeHostName = LEGACY_HOST_NAME;
+    try {
+      port?.disconnect();
+    } catch {
+      /* ignore */
+    }
+    port = null;
+    return true;
   }
 
   return {
     setOnDisconnect(cb: (() => void) | undefined) {
       onDisconnectUser = cb;
     },
+    setOnProgress(cb: ((info: RpcChunkProgress) => void) | undefined) {
+      onProgressUser = cb;
+    },
     isConnected() {
       return port !== null;
     },
     async request(method: string, params?: unknown): Promise<unknown> {
-      const p = ensurePort();
-      const id = nextId++;
-      return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject, chunks: [] });
-        try {
-          p.postMessage({ jsonrpc: '2.0', id, method, params });
-        } catch (e) {
-          pending.delete(id);
-          reject(e instanceof Error ? e : new Error(String(e)));
-        }
-      });
+      const attempt = (): Promise<unknown> => {
+        const p = ensurePort();
+        const id = nextId++;
+        return new Promise((resolve, reject) => {
+          pending.set(id, { resolve, reject, chunks: [] });
+          try {
+            p.postMessage({ jsonrpc: '2.0', id, method, params });
+          } catch (e) {
+            pending.delete(id);
+            reject(e instanceof Error ? e : new Error(String(e)));
+          }
+        });
+      };
+      try {
+        return await attempt();
+      } catch (e) {
+        if (maybeFallbackHost(e)) return attempt();
+        throw e;
+      }
     },
     disconnect() {
       try {

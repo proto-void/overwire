@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/proto-void/overwire/discussions
+    about: General questions, tips, and open-ended conversation. Not for bugs or local-only feature ideas.
+  - name: 🌐 Help & Community
+    url: https://overwire.protovoid.com/support/
+    about: Sole-maintainer support policy. GitHub only — no Slack, Discord, or email 1:1 support.

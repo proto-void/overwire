@@ -21,4 +21,4 @@ Build with:
 DETOUR_BRAND=<slug> corepack pnpm --filter @detour/extension zip
 ```
 
-Private partner brands (e.g. Rogers) should stay **gitignored** so the public MIT tree never ships their marks. Use display name **Detour**; partner identity lives in tokens, icons, and optional `partner-logo.svg` (lockup reads `Detour | [partner]`).
+Public product brands committed in-tree: `brands/overwire/` (default; Concept A Bypass Arc) and `brands/detour/` (legacy via `BRAND=detour`). Private partner brands should stay **gitignored**. Do not revive Rogers. Partner identity (if any) lives in tokens/icons/`partner-logo.svg`, not a forked product title unless `DETOUR_BRAND_NAME` / `BRAND_NAME` is set.

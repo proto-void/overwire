@@ -1,5 +1,3 @@
-/** One-line preview for grid cells (blobs, JSON, primitives). */
-
 const BLOB_PREVIEW = 48;
 const JSON_PREVIEW = 120;
 
@@ -18,7 +16,37 @@ function bytesPreview(bytes: Uint8Array): string {
 }
 
 /**
- * Format a DB cell for a compact one-line grid. Never throws.
+ * Decodes bytes to a UTF-8 string. 
+ * - If the decoded string is valid JSON, it returns the parsed object/array.
+ * - If it's normal text, it returns a single-line trimmed string.
+ * - If it's binary data, it returns null.
+ */
+function tryDecodeText(bytes: Uint8Array): unknown | null {
+  try {
+    const decodedText = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    
+    // 1. Check if the text inside the buffer is a nested JSON object or array
+    const trimmed = decodedText.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        // Fall through to regular text handling if JSON parsing fails
+      }
+    }
+
+    // 2. Otherwise handle as normal text data
+    const singleLineText = decodedText.replace(/\s+/g, ' ').trim();
+    return singleLineText.length > JSON_PREVIEW 
+      ? `${singleLineText.slice(0, JSON_PREVIEW)}…` 
+      : singleLineText;
+  } catch {
+    return null; // Return null to fall back to raw hex representation
+  }
+}
+
+/**
+ * Format a DB cell for a compact one-line grid row.
  */
 export function formatDbCell(value: unknown): string {
   if (value === null || value === undefined) return 'null';
@@ -30,16 +58,20 @@ export function formatDbCell(value: unknown): string {
     return one.length > JSON_PREVIEW ? `${one.slice(0, JSON_PREVIEW)}…` : one;
   }
   if (value instanceof ArrayBuffer) {
-    return bytesPreview(new Uint8Array(value));
+    const decoded = tryDecodeText(new Uint8Array(value));
+    return typeof decoded === 'object' && decoded !== null ? JSON.stringify(decoded) : String(decoded ?? bytesPreview(new Uint8Array(value)));
   }
   if (isArrayBufferView(value)) {
-    return bytesPreview(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
+    const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+    const decoded = tryDecodeText(bytes);
+    return typeof decoded === 'object' && decoded !== null ? JSON.stringify(decoded) : String(decoded ?? bytesPreview(bytes));
   }
   if (typeof value === 'object') {
-    // cassandra-driver / Buffer-like
-    const maybe = value as { type?: string; data?: unknown; buffer?: ArrayBuffer };
-    if (maybe.type === 'Buffer' && Array.isArray((value as { data?: unknown }).data)) {
-      return bytesPreview(Uint8Array.from((value as { data: number[] }).data));
+    const maybe = value as { type?: string; data?: unknown };
+    if (maybe.type === 'Buffer' && Array.isArray(maybe.data)) {
+      const bytes = Uint8Array.from(maybe.data as number[]);
+      const decoded = tryDecodeText(bytes);
+      return typeof decoded === 'object' && decoded !== null ? JSON.stringify(decoded) : String(decoded ?? bytesPreview(bytes));
     }
     try {
       const json = JSON.stringify(value);
@@ -51,4 +83,46 @@ export function formatDbCell(value: unknown): string {
     }
   }
   return String(value);
+}
+
+/**
+ * Deeply formats any properties inside an RPC payload object, 
+ * unpacking binary nested text and JSON structures cleanly.
+ */
+export function formatPayload(payload: unknown): unknown {
+  if (payload === null || payload === undefined) return payload;
+  
+  if (
+    payload instanceof ArrayBuffer || 
+    ArrayBuffer.isView(payload) || 
+    (typeof payload === 'object' && (payload as { type?: string }).type === 'Buffer')
+  ) {
+    const bytes = payload instanceof ArrayBuffer 
+      ? new Uint8Array(payload)
+      : ArrayBuffer.isView(payload)
+      ? new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength)
+      : Uint8Array.from((payload as { data: number[] }).data);
+      
+    const decoded = tryDecodeText(bytes);
+    if (decoded !== null) {
+      return formatPayload(decoded);
+    }
+    // Keep formatDbCell ONLY for binary blobs to get the hex preview marker
+    return formatDbCell(payload);
+  }
+  
+  if (Array.isArray(payload)) {
+    return payload.map(formatPayload);
+  }
+  
+  if (typeof payload === 'object') {
+    const formattedObj: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(payload)) {
+      formattedObj[key] = formatPayload(val);
+    }
+    return formattedObj;
+  }
+  
+  // FIX: Return the raw string/primitive value instead of calling formatDbCell here!
+  return payload;
 }

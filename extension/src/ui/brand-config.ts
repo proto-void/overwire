@@ -3,7 +3,7 @@ export interface RuntimeBrand {
   shortName: string;
   slug: string;
   defaultTheme: 'dark' | 'light';
-  /** Native-messaging host name; default `com.detour.db`. */
+  /** Native-messaging host name; Overwire default `com.overwire.db` (legacy `com.detour.db`). */
   nativeHostName?: string;
 }
 
@@ -12,15 +12,17 @@ declare global {
     readonly BRAND: RuntimeBrand | string;
     /** Absolute URL string when partner-logo.svg existed at build, else ''. */
     readonly PARTNER_LOGO_URL: string;
+    /** Ed25519 SPKI public verify key (base64url/base64). Empty = Community only. */
+    readonly LICENSE_VERIFY_PUBLIC_KEY: string;
   }
 }
 
-const DEFAULT_NATIVE_HOST = 'com.detour.db';
+const DEFAULT_NATIVE_HOST = 'com.overwire.db';
 
 const fallback: RuntimeBrand = {
-  name: 'Detour',
-  shortName: 'Detour',
-  slug: 'detour',
+  name: 'Overwire',
+  shortName: 'Overwire',
+  slug: 'overwire',
   defaultTheme: 'dark',
   nativeHostName: DEFAULT_NATIVE_HOST,
 };

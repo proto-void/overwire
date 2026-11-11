@@ -1,7 +1,7 @@
 # Capability map
 
 **Status:** Draft  
-**Last updated:** 2026-10-09
+**Last updated:** 2026-11-10
 
 `local-bridge` is Approved (Hamza, 2026-10-07): a Node CLI on `127.0.0.1`, not a backend. In-place fulfill (keep the original URL) is Approved the same day when response rewriting is allowed. See [local-bridge](local-bridge.md), ADR-012, and ADR-013.
 
@@ -27,18 +27,20 @@ Detour lets developers **point production at their code** via rules compiled int
 | observability | Badge, match log, compile errors | — |
 | distribution | Stores, permissions copy, CI artifacts | — |
 | api-client | API Tester A–C: send, collections, runner/load, OAuth/SigV4/Digest, cookies, GraphQL/WS/SSE, visualizer, folder sync, capture | Extension page fetch + DNR session headers |
-| db-client | Databases: native host + adapters (A–D); Connection options v2 (Approved; plan 027) | Native messaging host (`com.detour.db`) |
+| db-client | Databases: native host + adapters (A–D); Connection options v2 (Approved; plan 027) | Native messaging host (`com.overwire.db` + legacy `com.detour.db`) |
+| licensing | Offline Ed25519 `OWPRO` keys; Pro/Team power tools only; MIT core ungated (**Approved** — ADR-032) | WebCrypto verify + Stripe webhook Worker (stateless) |
 
 ## Non-goals (global)
 
-- Detour-hosted backend / accounts
+- Overwire/Detour-hosted backend / accounts
 - Full MITM desktop proxy replacement
 - Shipping rule bodies as telemetry
+- Locking MIT core behind paywalls
 
 ## Dependencies (build order)
 
-`rule-model` → `engine-core` → (`page-inject` ∥ `api-mock`) → `engine-deep` → `local-bridge` → `workspace-ui` → `observability` → `distribution` → `api-client` (A–C Approved) → `db-client` (A–D via `026`; Connection options via `027`)
+`rule-model` → `engine-core` → (`page-inject` ∥ `api-mock`) → `engine-deep` → `local-bridge` → `workspace-ui` → `observability` → `distribution` → `api-client` (A–C Approved) → `db-client` (A–D via `026`; Connection options via `027`) → `licensing` (**Approved** — offline verify + License UI)
 
 UI may prototype against mocks earlier, but production wiring follows Approved specs in order.
 
-`distribution` is Approved for CI and packaging only (Hamza, 2026-10-07). `local-bridge` is Approved for the localhost file CLI and in-place fulfill (Hamza, 2026-10-07). npm publish of `@detour/cli` is still out of scope. `api-client` Slices A–C may implement (`025`). `db-client` A–D shipped (`026`); Connection options Approved — implement via `027`.
+`distribution` is Approved for CI and packaging only (Hamza, 2026-10-07). `local-bridge` is Approved for the localhost file CLI and in-place fulfill (Hamza, 2026-10-07). npm publish of `@overwire/cli` is still out of scope. `api-client` Slices A–C may implement (`025`). `db-client` A–D shipped (`026`); Connection options Approved — implement via `027`. `licensing` Approved (Hamza, 2026-11-10); MIT core stays ungated (plan 041 / ADR-032).

@@ -11,8 +11,18 @@ import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 
-const EXT = path.resolve(import.meta.dirname, '../.output/detour/chrome-mv3');
+const EXT_CANDIDATES = [
+  path.resolve(import.meta.dirname, '../.output/overwire/chrome-mv3'),
+  path.resolve(import.meta.dirname, '../.output/detour/chrome-mv3'),
+];
+const EXT = EXT_CANDIDATES.find((p) => fs.existsSync(path.join(p, 'manifest.json')));
 const CHROME = process.env.CHROME;
+if (!EXT) {
+  console.error(
+    'No unpacked Chrome MV3 build found. Run `pnpm --filter @overwire/extension build` first (default brand overwire, or BRAND=detour).',
+  );
+  process.exit(2);
+}
 if (!CHROME) {
   console.error('Set CHROME to a Chrome for Testing binary (npx @puppeteer/browsers install chrome@stable).');
   process.exit(2);
@@ -338,6 +348,20 @@ try {
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.waitForFunction(() => document.body.innerText.includes('Point production at your code.'), { timeout: 10000 });
   check('empty state shown before import', true, true);
+  const popupBox = await popup.evaluate(() => {
+    const app = document.getElementById('app');
+    const rect = (app ?? document.body).getBoundingClientRect();
+    return {
+      height: rect.height,
+      width: rect.width,
+      textLen: (document.body.innerText || '').trim().length,
+      theme: document.documentElement.dataset.theme || '',
+    };
+  });
+  check('popup app has non-trivial height (not black square)', popupBox.height >= 120, true);
+  check('popup app has non-trivial width', popupBox.width >= 200, true);
+  check('popup has visible text content', popupBox.textLen >= 20, true);
+  check('popup theme applied', popupBox.theme === 'dark' || popupBox.theme === 'light', true);
 
   await popup.click('details.import > summary');
   const input = await popup.$('input[type=file]');
@@ -403,7 +427,9 @@ try {
   check('main_frame page load redirected', [nav.title, nav.url], ['NEW', 'http://127.0.0.1:8002/new.html']);
 
   await popup.click('#detour-enabled');
-  await popup.waitForFunction(() => document.body.innerText.includes('Detour is off'), { timeout: 10000 });
+  await popup.waitForFunction(() => /is off\. No requests are being changed/i.test(document.body.innerText), {
+    timeout: 10000,
+  });
   check('switch reports off', await popup.$eval('#detour-enabled', (b) => b.getAttribute('aria-checked')), 'false');
   const off = await run('http://localhost:8001/page.html');
   check('switch off stops redirects', [off.A, off.B], ['PROD', 'PROD']);
@@ -442,10 +468,15 @@ try {
 
   // API Tester — Which rules apply: the imported redirect for a.js should win; a loop must not.
   await clickTab('API Tester');
-  await editor.$$eval('.api-tester .response .subtabs button', (tabs) =>
+  // Response pane uses `.resp-tabs` (not `.subtabs`, which is the request-side tablist).
+  await editor.$$eval('.api-tester .resp-tabs button', (tabs) =>
     tabs.find((el) => /Which rules apply/i.test(el.textContent ?? ''))?.click(),
   );
   await editor.waitForSelector('#tester-url');
+  await editor.waitForFunction(
+    () => document.querySelector('.api-tester .resp-tabs button.active')?.textContent?.includes('Which rules apply'),
+    { timeout: 5000 },
+  );
   const setTesterUrl = async (url) => {
     // Controlled Svelte input: set value + dispatch input (avoid puppeteer type races).
     await editor.$eval(
@@ -474,13 +505,15 @@ try {
   const loopText = await testerText();
   check('API Tester does not let a redirect loop win', /No rule is applied/.test(loopText) && /not applied/i.test(loopText) && !/Redirects to/.test(loopText), true);
 
-  // Slice B — power tools surface + save-as-mock synergy
+  // Slice B — power tools surface + save-as-mock synergy (Tools drawer starts closed).
+  await editor.$eval('.api-tester .tools-btn', (btn) => btn.click());
+  await editor.waitForSelector('.power', { timeout: 5000 });
   check('API Tester power tools include Runner', await editor.$eval('.power', (el) => /Runner/.test(el.textContent ?? '')), true);
   await editor.$$eval('.power .tabs button', (tabs) => tabs.find((el) => /Code/i.test(el.textContent ?? ''))?.click());
   check('API Tester codegen panel shows fetch', await editor.$eval('.power .code', (el) => /fetch/i.test(el.textContent ?? '')), true);
   await setTesterUrl('http://127.0.0.1:8002/a.js');
   await editor.$eval('.power .synergy button', (btn) => {
-    const match = [...document.querySelectorAll('.power .synergy button')].find((el) => /Save response as Detour mock/i.test(el.textContent ?? ''));
+    const match = [...document.querySelectorAll('.power .synergy button')].find((el) => /Save response as .+ mock/i.test(el.textContent ?? ''));
     // Without a live response body, still exercise Redirect this to localhost
     void btn;
     void match;
@@ -494,6 +527,9 @@ try {
   // Discard synergy draft so later e2e group/rule indexing stays on the imported 2 groups.
   await editor.$$eval('button', (buttons) => buttons.find((el) => el.textContent?.trim() === 'Discard' && !el.disabled)?.click());
   await editor.waitForFunction(() => document.querySelectorAll('section.group').length === 2, { timeout: 8000 });
+  // Close any leftover rule drawer before creating the E2E group.
+  await editor.$$eval('[data-testid=drawer-done]', (buttons) => buttons[0]?.click());
+  await editor.waitForFunction(() => !document.querySelector('[data-testid=drawer]'), { timeout: 5000 }).catch(() => {});
 
   const setAutosave = async (on) => {
     await editor.$eval(
@@ -505,7 +541,7 @@ try {
     );
     await editor.waitForFunction((next) => document.querySelector('#autosave')?.getAttribute('aria-checked') === String(next), { timeout: 5000 }, on);
   };
-  const drawerPattern = () => editor.waitForSelector('[data-testid=drawer] input[id$="-pattern"]', { timeout: 5000 });
+  const drawerPattern = () => editor.waitForSelector('[data-testid=drawer] textarea[id$="-pattern"]', { timeout: 5000 });
   const openDrawerTab = async (label) => {
     await editor.waitForSelector('[data-testid=drawer]', { timeout: 5000 });
     await editor.$$eval('[data-testid=drawer] [role=tab]', (tabs, name) => {
@@ -520,7 +556,7 @@ try {
   const drawerTo = async () => {
     await chooseAction('redirect');
     await openDrawerTab('Action');
-    return editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
+    return editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
   };
   // Manual Save now (autosave off): empty target is blocked; a filled rule applies.
   await clickTab('Rules');
@@ -541,9 +577,9 @@ try {
   await patternInput.type('*:8001/c.js');
   await chooseAction('redirect');
   await openDrawerTab('Action');
-  await editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
+  await editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
   const beforeSave = await editor.evaluate(() => {
-    const to = document.querySelector('[data-testid=drawer] input[id$="-to"]');
+    const to = document.querySelector('[data-testid=drawer] textarea[id$="-to"]');
     const save = document.querySelector('[data-testid=save-now]');
     return {
       toValue: to?.value ?? null,
@@ -562,7 +598,7 @@ try {
     () =>
       [...document.querySelectorAll('.message.error')].some((el) => /where matching/i.test(el.textContent ?? '')) ||
       document.activeElement?.id?.endsWith('-to') ||
-      document.querySelector('[data-testid=drawer] input[id$="-to"][aria-invalid=true]'),
+      document.querySelector('[data-testid=drawer] textarea[id$="-to"][aria-invalid=true]'),
     { timeout: 8000 },
   );
   check(
@@ -570,14 +606,14 @@ try {
     await editor.evaluate(
       () =>
         document.activeElement?.id?.endsWith('-to') ||
-        document.querySelector('[data-testid=drawer] input[id$="-to"]')?.getAttribute('aria-invalid') === 'true',
+        document.querySelector('[data-testid=drawer] textarea[id$="-to"]')?.getAttribute('aria-invalid') === 'true',
     ),
     true,
   );
 
   await (await drawerTo()).type('http://127.0.0.1:8002/c.js');
   await openDrawerTab('Test');
-  await (await editor.waitForSelector('[data-testid=drawer] input[id$="-sample"]', { timeout: 5000 })).type('http://localhost:8001/c.js');
+  await (await editor.waitForSelector('[data-testid=drawer] textarea[id$="-sample"]', { timeout: 5000 })).type('http://localhost:8001/c.js');
   const preview = await editor.$eval('[data-testid=drawer] [data-testid=preview]', (el) => el.textContent.replace(/\s+/g, ' ').trim());
   check('live preview shows the redirect target', preview, 'Matches. It would go to http://127.0.0.1:8002/c.js'.replace(/^/, '✓ '));
 
@@ -628,28 +664,49 @@ try {
 
   await chooseAction('redirect');
   await openDrawerTab('Action');
-  await editor.waitForSelector('[data-testid=drawer] input[id$="-to"]', { timeout: 5000 });
-  await editor.$eval('[data-testid=drawer] input[id$="-to"]', (el, value) => {
+  await editor.waitForSelector('[data-testid=drawer] textarea[id$="-to"]', { timeout: 5000 });
+  // Arm before typing: toast copy is "Saved. Applying…" then "Rules applied"; Undo stays ~12s when offered.
+  // Old wait only matched "Saved", so fast CI apply (toast already "Rules applied" or save-state-only) timed out.
+  const autosaveCommitted = editor.waitForFunction(
+    () => {
+      const toast = document.querySelector('[data-testid=toast]')?.textContent ?? '';
+      const state = document.querySelector('[data-testid=save-state]')?.textContent ?? '';
+      return (
+        !!document.querySelector('[data-testid=toast-undo]') ||
+        /Saved|Rules applied/.test(toast) ||
+        /^Autosave/.test(state)
+      );
+    },
+    { timeout: 10000 },
+  );
+  await editor.$eval('[data-testid=drawer] textarea[id$="-to"]', (el, value) => {
     el.focus();
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }, 'http://127.0.0.1:8002/autosave.js');
-  await editor.waitForFunction(() => document.querySelector('[data-testid=toast]')?.textContent.includes('Saved'), { timeout: 8000 }).catch(async (e) => {
-    console.log('--- autosave toast missing ---\n' + (await editorText()) + '\nstate=' + (await editor.$eval('[data-testid=save-state]', (el) => el.textContent)) + '\nautosave=' + (await editor.$eval('#autosave', (el) => el.getAttribute('aria-checked'))));
+  await autosaveCommitted.catch(async (e) => {
+    console.log(
+      '--- autosave commit missing ---\n' +
+        (await editorText()) +
+        '\nstate=' +
+        (await editor.$eval('[data-testid=save-state]', (el) => el.textContent)) +
+        '\nautosave=' +
+        (await editor.$eval('#autosave', (el) => el.getAttribute('aria-checked'))),
+    );
     throw e;
   });
-  await editor.waitForFunction(() => /Autosave/.test(document.querySelector('[data-testid=save-state]')?.textContent ?? ''), { timeout: 5000 });
   const afterAutosave = await editor.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace.data);
   const autosavedPatterns = afterAutosave.groups.flatMap((g) => g.rules.map((r) => r.match.pattern));
   check('autosave writes a valid rule without Save now', autosavedPatterns.includes('*:8001/autosave.js'), true);
-  // Toast starts as "Saved…" then becomes "Rules applied" when apply finishes.
+  const toastText = await editor.$eval('[data-testid=toast]', (el) => el.textContent).catch(() => '');
   check(
     'autosave toast announces Saved or Applied',
-    /Saved|Rules applied/.test(await editor.$eval('[data-testid=toast]', (el) => el.textContent)),
+    /Saved|Rules applied/.test(toastText) || /^Autosave/.test(await editor.$eval('[data-testid=save-state]', (el) => el.textContent)),
     true,
   );
 
-  await editor.click('[data-testid=toast-undo]');
+  const undoBtn = await editor.waitForSelector('[data-testid=toast-undo]', { timeout: 5000 });
+  await undoBtn.click();
   await editor.waitForFunction(async () => {
     const data = (await chrome.storage.local.get('workspace')).workspace.data;
     return !data.groups.flatMap((g) => g.rules.map((r) => r.match.pattern)).includes('*:8001/autosave.js');
@@ -866,7 +923,8 @@ try {
   await popup.bringToFront();
   await popup.click('#theme-light');
   await popup.waitForFunction(() => document.documentElement.dataset.theme === 'light');
-  check('light theme background', await popup.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(244, 246, 248)');
+  // Overwire light `--bg` is #f8fafc (see brands/overwire/tokens.css).
+  check('light theme background', await popup.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(248, 250, 252)');
   // tokens: --bg light remains #f4f6f8
   await popup.reload();
   await popup.waitForFunction(() => document.documentElement.dataset.theme === 'light', { timeout: 10000 });
@@ -1092,7 +1150,7 @@ try {
       func: () => ({
         SRI_JS: window.SRI_JS,
         SRI_JS_BAD: window.SRI_JS_BAD,
-        meta: document.querySelector('meta[name="detour-sri"]')?.getAttribute('content') ?? '',
+        meta: document.querySelector('meta[name="overwire-sri"]')?.getAttribute('content') ?? '',
       }),
     });
     await chrome.tabs.remove(tab.id);

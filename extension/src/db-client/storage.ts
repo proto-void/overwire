@@ -104,6 +104,21 @@ export async function loadDbClientState(area: StorageAreaLike): Promise<ParseRes
   }
 }
 
+/**
+ * Persist query-tab SQL + result metadata only. Raw `rows` stay in memory while
+ * the Options page is open — serializing big grids into chrome.storage.local
+ * stalls the UI (JSON + valibot) on every query.
+ */
+export function stripQueryTabRowsForPersist(tabs: DbQueryTab[]): DbQueryTab[] {
+  return tabs.map((tab) => ({
+    ...tab,
+    resultSets: (tab.resultSets ?? []).map((rs) => ({
+      ...rs,
+      rows: [],
+    })),
+  }));
+}
+
 export async function saveDbClientState(area: StorageAreaLike, state: DbClientState): Promise<void> {
   const ui: DbUiPrefs | undefined = state.ui;
   await area.set({
@@ -114,7 +129,7 @@ export async function saveDbClientState(area: StorageAreaLike, state: DbClientSt
       idleTimeoutMinutes: state.idleTimeoutMinutes ?? 15,
       syncFolder: state.syncFolder ?? '',
       ui: ui ?? undefined,
-      queryTabs: capQueryTabs(state.queryTabs ?? []),
+      queryTabs: stripQueryTabRowsForPersist(capQueryTabs(state.queryTabs ?? [])),
       activeQueryTabId: state.activeQueryTabId ?? null,
     },
   });

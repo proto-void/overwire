@@ -295,7 +295,7 @@ describe('ruleStatus', () => {
     expect(ruleStatus({ ...rule, note: 'edited' }, ctx)).toEqual({ kind: 'unsaved' });
     expect(ruleStatus(rule, { ...ctx, saved: { groups: [{ ...saved.groups[0]!, enabled: false }] } })).toEqual({ kind: 'off', because: 'group' });
     expect(ruleStatus(rule, { ...ctx, awaitingApply: true })).toEqual({ kind: 'pending' });
-    expect(ruleStatus(rule, { ...ctx, report: report({ disabled: true, applied: [] }) })).toEqual({ kind: 'detour-off' });
+    expect(ruleStatus(rule, { ...ctx, report: report({ disabled: true, applied: [] }) })).toEqual({ kind: 'off-global' });
     expect(ruleStatus(rule, ctx)).toEqual({ kind: 'applied' });
     expect(ruleStatus(rule, { ...ctx, report: report({ applied: [], refused: [{ groupId: 'g', ruleId: 'r', reason: 'regex-limit', message: 'm' }] }) })).toEqual({
       kind: 'refused',
@@ -313,7 +313,7 @@ describe('ruleStatus', () => {
 });
 
 it('names export files by date', () => {
-  expect(exportFileName(new Date('2026-10-06T23:00:00Z'))).toBe('detour-2026-10-06.json');
+  expect(exportFileName(new Date('2026-10-06T23:00:00Z'))).toBe('overwire-2026-10-06.json');
 });
 
 describe('page rules in the editor', () => {

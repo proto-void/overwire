@@ -7,18 +7,29 @@ import type { WebRequestApi } from '../engine-deep/firefox-filter';
 import { BODY_CONSENT_KEY } from '../engine-deep/permissions';
 import { createBodyEngine, type PermissionQuery } from '../engine-deep/sync';
 import { fetchText, handleBridgeMessage, type Sender } from '../page-inject/background-handlers';
-import { RESYNC_MESSAGE, type PageApi } from '../page-inject/sync';
+import { LEGACY_RESYNC_MESSAGE, RESYNC_MESSAGE, type PageApi } from '../page-inject/sync';
 import { BRIDGE_SESSION_KEY } from '../local-bridge/session';
 import { ENABLED_KEY, WORKSPACE_KEY } from '../rule-model/storage';
 import { startMatchLog, type ActionBadgeApi, type MatchLogDeps } from '../observability/install';
 import { loadApiClientState, saveApiClientState } from '../api-client/storage';
 import { runCollection, toStoredReport } from '../api-client/runner';
-import { scheduleIdFromAlarm } from '../api-client/schedule';
+import { migrateLegacyApiRunAlarms, scheduleIdFromAlarm } from '../api-client/schedule';
 import { loadWorkspace } from '../rule-model/storage';
+import { brandName } from '../ui/brand-config';
+import { LICENSE_KEY_STORAGE, refreshLicenseState } from '../licensing/verify';
 
 export default defineBackground(() => {
   const dnr = browser.declarativeNetRequest as unknown as DnrApi;
   const area = browser.storage.local;
+  const managed = (browser.storage as unknown as { managed?: { get: typeof browser.storage.local.get } })
+    .managed;
+
+  const refreshLicenseSafely = () =>
+    refreshLicenseState({ local: area, managed }).catch((e) =>
+      console.error(`${brandName}: license refresh failed`, e),
+    );
+  // Boot + lifecycle: local re-verify only (no phone-home).
+  void refreshLicenseSafely();
   const page: PageApi = {
     scripting: browser.scripting as unknown as PageApi['scripting'],
     // Read live: it appears/disappears as the user flips the toggle or grants the permission, and can throw.
@@ -71,8 +82,17 @@ export default defineBackground(() => {
   const refreshSafely = () => refresh().catch((e) => console.error('Detour: failed to apply rules', e));
 
   // Dynamic rules persist across restarts but user scripts are cleared on update, so re-apply on both.
-  browser.runtime.onInstalled.addListener(refreshSafely);
-  browser.runtime.onStartup.addListener(refreshSafely);
+  // Also rewrite legacy detour-api-run:* alarms to overwire-api-run:*.
+  const onInstalled = () => {
+    void migrateLegacyApiRunAlarms(browser.alarms).catch((e) => console.error(`${brandName}: alarm migration failed`, e));
+    refreshSafely();
+    void refreshLicenseSafely();
+  };
+  browser.runtime.onInstalled.addListener(onInstalled);
+  browser.runtime.onStartup.addListener(() => {
+    refreshSafely();
+    void refreshLicenseSafely();
+  });
   browser.runtime.onSuspend?.addListener(() => {
     void bodyEngine.stop();
   });
@@ -80,11 +100,15 @@ export default defineBackground(() => {
   browser.permissions.onRemoved.addListener(refreshSafely);
   browser.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && (WORKSPACE_KEY in changes || ENABLED_KEY in changes || BRIDGE_SESSION_KEY in changes)) void refreshSafely();
+    if ((areaName === 'local' || areaName === 'managed') && LICENSE_KEY_STORAGE in changes) {
+      void refreshLicenseSafely();
+    }
   });
 
   browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return;
-    if ((message as { type?: unknown } | null)?.type === RESYNC_MESSAGE) {
+    const messageType = (message as { type?: unknown } | null)?.type;
+    if (messageType === RESYNC_MESSAGE || messageType === LEGACY_RESYNC_MESSAGE) {
       if (sender.tab === undefined || sender.url?.startsWith(browser.runtime.getURL('/'))) void refreshSafely();
       return;
     }
@@ -118,7 +142,7 @@ export default defineBackground(() => {
           collection,
           folderId: schedule.folderId,
           iterations: 1,
-          globalApplyDetour: loaded.value.applyDetourRules !== false,
+          globalApplyRules: loaded.value.applyRules !== false,
           workspace,
           scopes: {
             environment: env?.variables ?? [],
@@ -133,10 +157,10 @@ export default defineBackground(() => {
         });
         if (schedule.notifyOnFail && report.summary.failed > 0) {
           try {
-            await browser.notifications?.create(`detour-api-run-${report.id}`, {
+            await browser.notifications?.create(`overwire-api-run-${report.id}`, {
               type: 'basic',
               iconUrl: 'icons/128.png',
-              title: 'Detour API Tester',
+              title: `${brandName} API Tester`,
               message: `Scheduled “${schedule.name}”: ${report.summary.failed} failed of ${report.summary.total}`,
             });
           } catch {
@@ -144,7 +168,7 @@ export default defineBackground(() => {
           }
         }
       } catch (e) {
-        console.error('Detour: scheduled API run failed', e);
+        console.error(`${brandName}: scheduled API run failed`, e);
       }
     })();
   });

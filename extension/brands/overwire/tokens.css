@@ -1,0 +1,60 @@
+/* Overwire brand palette — Bypass Arc (dark default). Structural rules stay in ui/base.css. */
+:root {
+  color-scheme: dark;
+  --bg: #0b0f19;
+  --surface: #111827;
+  --surface-2: #1e293b;
+  --border: #334155;
+  --text: #ffffff;
+  --text-muted: #94a3b8;
+  --accent: #ff6b00;
+  --accent-text: #0b0f19;
+  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --focus: #ff6b00;
+  --selection: #3b2a1a;
+  --status-applied: #00ff66;
+  --status-applied-bg: color-mix(in srgb, var(--status-applied) 18%, transparent);
+  --status-refused: #ef4444;
+  --status-refused-bg: color-mix(in srgb, var(--status-refused) 18%, transparent);
+  --status-unsaved: #f59e0b;
+  --status-unsaved-bg: color-mix(in srgb, var(--status-unsaved) 18%, transparent);
+  --status-off: #94a3b8;
+  --status-off-bg: color-mix(in srgb, var(--status-off) 18%, transparent);
+  --radius: 8px;
+  --radius-pill: 6px;
+  --radius-btn-pill: 24px;
+  --shadow-1: 0 1px 2px color-mix(in srgb, #000 35%, transparent);
+  --shadow-2: 0 8px 24px color-mix(in srgb, #000 40%, transparent);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Light: burnt-orange accent for ≥4.5:1 AA text on white (ADR-031). */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #cbd5e1;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --accent: #c2410c;
+  --accent-text: #ffffff;
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --danger: #dc2626;
+  --warning: #b45309;
+  --focus: #c2410c;
+  --selection: #ffedd5;
+  --status-applied: #059669;
+  --status-applied-bg: color-mix(in srgb, var(--status-applied) 14%, transparent);
+  --status-refused: #dc2626;
+  --status-refused-bg: color-mix(in srgb, var(--status-refused) 12%, transparent);
+  --status-unsaved: #b45309;
+  --status-unsaved-bg: color-mix(in srgb, var(--status-unsaved) 14%, transparent);
+  --status-off: #475569;
+  --status-off-bg: color-mix(in srgb, var(--status-off) 10%, transparent);
+  --shadow-1: 0 1px 2px color-mix(in srgb, #000 8%, transparent);
+  --shadow-2: 0 8px 24px color-mix(in srgb, #000 12%, transparent);
+}

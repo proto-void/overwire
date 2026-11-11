@@ -2,10 +2,14 @@
  * Secret store for the DB host. Prefers OS keychain via @napi-rs/keyring when available;
  * falls back to an in-memory map (tests / environments without keyring).
  * In a SEA binary, keyring is loaded from node_modules beside the executable (ADR-029).
+ *
+ * Service name is `com.overwire.db`; reads fall back to legacy `com.detour.db` (plan 041).
  */
 import { isRunningAsSea, tryRequireBeside } from './sea-require.ts';
+import { HOST_NAME, LEGACY_HOST_NAME } from './protocol.ts';
 
-const SERVICE = 'com.detour.db';
+const SERVICE = HOST_NAME;
+const LEGACY_SERVICE = LEGACY_HOST_NAME;
 
 type KeyringMod = {
   Entry?: new (service: string, account: string) => {
@@ -83,6 +87,12 @@ export async function setSecret(account: string, value: string): Promise<void> {
   const kr = await getKeyring();
   if (kr) {
     kr.setPassword(SERVICE, account, value);
+    // Best-effort: drop legacy copy so we don't leave stale Detour entries as source of truth.
+    try {
+      kr.deletePassword(LEGACY_SERVICE, account);
+    } catch {
+      /* ignore */
+    }
     return;
   }
   memory.set(account, value);
@@ -90,7 +100,11 @@ export async function setSecret(account: string, value: string): Promise<void> {
 
 export async function getSecret(account: string): Promise<string | null> {
   const kr = await getKeyring();
-  if (kr) return kr.getPassword(SERVICE, account);
+  if (kr) {
+    const primary = kr.getPassword(SERVICE, account);
+    if (primary != null && primary !== '') return primary;
+    return kr.getPassword(LEGACY_SERVICE, account);
+  }
   return memory.get(account) ?? null;
 }
 
@@ -98,6 +112,11 @@ export async function deleteSecret(account: string): Promise<void> {
   const kr = await getKeyring();
   if (kr) {
     kr.deletePassword(SERVICE, account);
+    try {
+      kr.deletePassword(LEGACY_SERVICE, account);
+    } catch {
+      /* ignore */
+    }
     return;
   }
   memory.delete(account);

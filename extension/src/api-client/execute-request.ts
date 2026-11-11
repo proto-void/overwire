@@ -1,10 +1,10 @@
 import type { Workspace } from '../rule-model/schema';
-import { applyDetourRules } from './apply-rules';
+import { applyRules } from './apply-rules';
 import { clonePlain } from './clone-plain';
 import { splitForbiddenHeaders, withForbiddenHeaderRule, type DnrSessionApi } from './forbidden-headers';
 import type { ApiRequest } from './model';
 import { prepareHttp, prepareHttpAsync } from './prepare';
-import { resolveApplyDetourRules } from './resolve-apply-rules';
+import { resolveApplyRules } from './resolve-apply-rules';
 import { runSandboxedScript, scopesToMaps } from './run-scripts';
 import type { ScriptTestResult } from './scripts';
 import { sendRequest, type SendProgress, type SendResponse } from './send';
@@ -14,8 +14,8 @@ export interface ExecuteRequestOptions {
   request: ApiRequest;
   scopes: VariableScopes;
   workspace: Workspace;
-  /** Global Apply Detour default. */
-  globalApplyDetour: boolean;
+  /** Global Apply rules default. */
+  globalApplyRules: boolean;
   userScripts?: boolean;
   sandboxUrl?: string;
   /** Skip scripts (scheduled background runs). */
@@ -39,7 +39,7 @@ export interface ExecuteRequestResult {
 
 /**
  * Shared send path for API Tester, runner, load test, and scheduled runs.
- * Honors dual-scope Apply Detour via `resolveApplyDetourRules`.
+ * Honors dual-scope Apply rules via `resolveApplyRules`.
  */
 export async function executeApiRequest(options: ExecuteRequestOptions): Promise<ExecuteRequestResult> {
   const maps = scopesToMaps(options.scopes);
@@ -87,10 +87,10 @@ export async function executeApiRequest(options: ExecuteRequestOptions): Promise
   const authUpdate = prepared.authUpdate;
   let rulesLabel: string | undefined;
   let visualizer: { template: string; data: unknown } | null | undefined;
-  const effectiveApply = resolveApplyDetourRules(options.globalApplyDetour, working.applyDetourRules);
+  const effectiveApply = resolveApplyRules(options.globalApplyRules, working.applyRules);
 
   if (effectiveApply) {
-    const outcome = applyDetourRules(options.workspace, prepared, { userScripts: options.userScripts });
+    const outcome = applyRules(options.workspace, prepared, { userScripts: options.userScripts });
     rulesLabel = outcome.label;
     if (outcome.kind === 'blocked') {
       return {

@@ -1,6 +1,6 @@
 # Decisions (ADRs)
 
-**Last verified:** 2026-10-09 (ADR-028 Slice C amend; ADR-027 Databases native host)
+**Last verified:** 2026-11-10 (ADR-031 Overwire; ADR-032 licensing; ADR-033 DB big-data)
 
 ## ADR-001 — Stack: WXT + TypeScript + Svelte 5 + CodeMirror 6 + valibot; Node CLI
 
@@ -56,7 +56,7 @@ Compile user **Rules** through a **RuleCompiler** into the least-privilege engin
 
 ## ADR-003 — Product name: Detour
 
-**Status:** Accepted (with naming caveats)  
+**Status:** Superseded for product identity by [ADR-031](#adr-031--product-identity-overwire-bypass-arc) (2026-11-10). Kept for historical name-check notes.  
 **Date:** 2026-10-06
 
 ### Context
@@ -720,15 +720,19 @@ Internal partners (e.g. Rogers) needed a separately themed extension zip. The pu
 - **Display name is always Detour** for partner flavors. Partner identity is theme, tokens, icons, and optional partner logo — not a different product title. `DETOUR_BRAND_NAME` can still override when needed
 - Co-brand lockup: `Detour | [partner]` when `partner-logo.svg` is present
 - `import.meta.env.BRAND` exposes `{ name, shortName, slug, defaultTheme }` to the UI; user-facing copy uses `brandName`
-- **Committed:** `brands/detour/`, `brands/_template/`
+- **Committed:** `brands/detour/`, `brands/overwire/` (ADR-031), `brands/_template/`
 - **Gitignored:** private partner brand trees under `brands/<slug>/` when needed
-- Scripts: `zip` / `build` = Detour (`DETOUR_BRAND=detour`)
-- **Delivery DoD (current):** Detour zip only
+- Scripts: `zip` / `build` default = Detour (`DETOUR_BRAND=detour`) until cutover; Overwire via `DETOUR_BRAND=overwire`
+- **Delivery DoD (current):** Detour zip by default; Overwire zip when `DETOUR_BRAND=overwire` (plan 041). No Rogers dual-zip
 - No change to rules, engine, or storage keys across flavors
 
 ### Note (2026-10-23) — Rogers product retired
 
 Plan [033](plans/033-node-cassandra-rogers-exit.md): entire Rogers product (private `rogers-detour` repo + local tree + public `zip:rogers` / dual-zip DoD) deleted. ADR text kept for history. Do not revive Rogers hooks without a new Approved plan.
+
+### Note (2026-11-10) — Overwire public brand committed
+
+`brands/overwire/` is a **public** first-party brand (not a private partner tree). See ADR-031.
 
 ### Consequences
 
@@ -908,3 +912,83 @@ Plan [029](plans/029-closed-rogers-native-helper.md) public hooks remain histori
 - **Delivery DoD:** Detour zip only; no dual-zip Rogers
 - Distinct `nativeHostName` remains available for a future partner if needed
 - Specs: [db-client](specs/db-client.md), [distribution](specs/distribution.md); plans [029](plans/029-closed-rogers-native-helper.md) (abandoned for delivery), [033](plans/033-node-cassandra-rogers-exit.md)
+
+---
+
+## ADR-031 — Product identity: Overwire + Bypass Arc
+
+**Status:** Accepted  
+**Date:** 2026-11-10 (Hamza “Go” / Cursor master plan foundation; Concept A locked 2026-11-09)
+
+### Context
+
+Detour needed a clearer product identity for the full workbench (rules + API Tester + Databases), a distinct mark that reads at 16×16, and a rename path for repos, domains, and packages that preserves Chrome Web Store users and all `chrome.storage.local` data. Partner Rogers branding was already retired (ADR-026 note / plan 033).
+
+### Decision
+
+- **Product name:** **Overwire** (full: Overwire Workbench). Tagline remains “Point production at your code.” for continuity; marketing copy may widen to override / mock / query workbench language.
+- **Official mark:** Concept A **Bypass Arc** only (horizontal wire + neon-orange override arc over dashed production segment + live green terminal). Rejected: Concept B Spliced Wire, Concept C Switch Gate.
+- **Brand pack:** `extension/brands/overwire/` (`brand.ts`, `tokens.css` dark + WCAG AA light, `icon.svg` / `mark.svg` / `logo.svg`). Default build brand (cutover 2026-11-10 after CWS rebrand submit); legacy via `BRAND=detour`.
+- **Default brand:** **`overwire`** (was `detour` until CWS listing paste + identifier follow-ups landed).
+- **Chromium continuity:** Keep existing `chromiumManifestKey` and extension ids (unpacked + CWS `jfgbokgdgpjhkciooicmbdgablgkklmn`) so installs upgrade in place.
+- **Native host (target):** `com.overwire.db` with automatic read/connect fallback to `com.detour.db` during transition.
+- **Storage continuity:** Top-level storage keys (`workspace`, `apiCollections`, `dbConnections`, …) stay unchanged. Neutralize brand-prefixed *internal* identifiers (`applyDetourRules` → `applyRules`, alarm/userScript prefixes, export envelope names) with legacy read-fallbacks — separate implementation wave.
+- **Distribution targets:** Domain `https://overwire.protovoid.com`; GitHub `proto-void/overwire` + `proto-void/overwire-web` (renamed 2026-11-10; old names redirect); local folders `/Users/hamzakhan/overwire` + `…/overwire-web` (local `mv` still Hamza-only); workspace `overwire.code-workspace`. See `docs/ops/local-folder-rename.md`.
+- **Do not** revive Rogers / dual-zip DoD.
+
+### Consequences
+
+- Product facts in `PRODUCT.md` / glossary / conventions point at Overwire; Detour remains historical + opt-in `BRAND=detour` flavor
+- Web/support assets use Bypass Arc; sibling owns `/support/` page body
+- Plan [041](plans/041-overwire-rebrand-monetization-perf.md)
+
+---
+
+## ADR-032 — Offline Ed25519 licensing (MIT core + Pro/Team)
+
+**Status:** Accepted. Spec **Approved** (Hamza, 2026-11-10); extension offline verify + License UI may ship.
+**Date:** 2026-11-10
+
+### Context
+
+Optional paid power tools (ER diagram, schema diff, load-test reports, profile sync, notarized helpers, vault resolvers, managed policy) must not introduce accounts, a Detour/Overwire backend database, or telemetry of rule bodies. Core network rules, API Tester, Databases query workbench, Local Bridge, and unsigned helpers stay free MIT forever.
+
+### Decision
+
+- **Core:** 100% free, MIT, local-only, account-free forever (unchanged hard nos).
+- **License format:** `OWPRO.<base64url-payload>.<base64url-signature>` signed Ed25519; verified offline with WebCrypto `SubtleCrypto` in the extension (planned `extension/src/licensing/verify.ts`).
+- **Issuance:** Stateless Stripe webhook Worker signs with `LICENSE_ED25519_PRIVATE_KEY`, stores key on Stripe Customer metadata (zero app DB), emails buyer. Public key only in the extension.
+- **State:** Persist pasted `licenseKey` + derived `licenseStatus` in `browser.storage.local`; optionally read org keys from `browser.storage.managed`.
+- **Refresh hooks (when implemented):** service worker boot, `onStartup`, `onInstalled`, storage change on `licenseKey`.
+- **Tiers (product intent):** Community (MIT) · Pro (one-time / indie) · Team/Enterprise (seats / site + vault + managed). Exact prices live in marketing, not this ADR.
+- **Spec gate:** `AI/specs/licensing.md` **Approved** 2026-11-10. Webhook template under `detour-web/workers/license-webhook/`. Public verify key via build-time `LICENSE_VERIFY_PUBLIC_KEY` / `import.meta.env.LICENSE_VERIFY_PUBLIC_KEY` only (never private key in repo).
+
+### Consequences
+
+- No phone-home license server; offline verify works without network after key paste
+- Private signing key never commits to the repo
+- Feature gates must fail open to MIT core if verification is absent or invalid
+
+---
+
+## ADR-033 — Databases big-data UX architecture
+
+**Status:** Accepted (architecture). Implementation owned by the DB/popup sibling stream (plan 041 pillars 3–4).  
+**Date:** 2026-11-10
+
+### Context
+
+Large query result sets stall the Options UI because (1) `resultSets[].rows` are serialized into `chrome.storage.local` on every persist with valibot re-validation on load, (2) the results grid mounts hundreds of DOM rows and formats each cell twice, (3) column resize mutates per-cell inline styles every mousemove, (4) `setKeyspace` RPC runs before every statement, (5) chunked IPC has no progress UI, and (6) `JsonTreeView` expands unbounded roots.
+
+### Decision
+
+- **Persist metadata only:** `saveDbClientState` strips row arrays before `chrome.storage.local` (keep SQL, connection, lightweight column/rowCount/timing metadata). Keep full rows in memory while Options is open; debounce non-critical persists (~250ms).
+- **Virtualize the grid:** ~28px row height, overscan ~10, only ~35–45 `<tr>` in the DOM; single-pass `{@const cellText = formatDbCell(cell)}`; column widths via CSS custom properties on `<col>` / table for 60fps resize.
+- **Execution feedback:** live elapsed timer, statement/chunk progress callback from RPC, Cancel wired to existing cancel path; keep prior rows under a loading overlay when paginating.
+- **Session keyspace cache:** call `setKeyspace` only when the active keyspace differs from last applied for that connection.
+- **Lazy JSON tree:** cap children per expanded node (~100) with “show more”; format drawer payloads via `$derived` once per open.
+
+### Consequences
+
+- Sibling stream implements against `Databases.svelte` / `DbResultsPane.svelte` / `JsonTreeView.svelte` / `db-client/storage.ts` / `db-client/protocol.ts` — foundation agents must not edit those paths
+- Plan [041](plans/041-overwire-rebrand-monetization-perf.md); complements DB safety cleanup (unsafe SQL regex removal, track JsonTreeView)

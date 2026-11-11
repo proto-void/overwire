@@ -1,4 +1,5 @@
 import type { Workspace } from '../rule-model/schema';
+import { brandName } from '../ui/brand-config';
 import { describeResolution, resolveProbe, type TesterView } from '../workspace-ui/tester';
 
 export interface PreparedRequest {
@@ -13,13 +14,13 @@ export type ApplyRulesOutcome =
       kind: 'network';
       request: PreparedRequest;
       view: TesterView;
-      label: 'Detour rules applied (simulated)';
+      label: string;
     }
   | {
       kind: 'blocked';
       view: TesterView;
       message: string;
-      label: 'Detour rules applied (simulated)';
+      label: string;
     }
   | {
       kind: 'mock';
@@ -27,7 +28,7 @@ export type ApplyRulesOutcome =
       status: number;
       body: string;
       headers: Record<string, string>;
-      label: 'Detour rules applied (simulated)';
+      label: string;
     }
   | {
       kind: 'passthrough';
@@ -36,10 +37,10 @@ export type ApplyRulesOutcome =
       label?: undefined;
     };
 
-const LABEL = 'Detour rules applied (simulated)' as const;
+const label = () => `${brandName} rules applied (simulated)`;
 
 /** Map resolveProbe into send preparation. Resource type is always xmlhttprequest. */
-export function applyDetourRules(workspace: Workspace, prepared: PreparedRequest, options?: { userScripts?: boolean }): ApplyRulesOutcome {
+export function applyRules(workspace: Workspace, prepared: PreparedRequest, options?: { userScripts?: boolean }): ApplyRulesOutcome {
   const resolved = resolveProbe(workspace, {
     url: prepared.url,
     method: prepared.method,
@@ -57,7 +58,7 @@ export function applyDetourRules(workspace: Workspace, prepared: PreparedRequest
       kind: 'blocked',
       view,
       message: `Blocked by rule ${resolved.request.ref.groupName}`,
-      label: LABEL,
+      label: label(),
     };
   }
 
@@ -68,7 +69,7 @@ export function applyDetourRules(workspace: Workspace, prepared: PreparedRequest
       status: resolved.request.status,
       body: resolved.request.body,
       headers: { 'content-type': 'application/json' },
-      label: LABEL,
+      label: label(),
     };
   }
 
@@ -98,6 +99,9 @@ export function applyDetourRules(workspace: Workspace, prepared: PreparedRequest
     kind: 'network',
     request: { ...prepared, url, headers },
     view,
-    label: LABEL,
+    label: label(),
   };
 }
+
+/** @deprecated Prefer applyRules */
+export const applyDetourRules = applyRules;

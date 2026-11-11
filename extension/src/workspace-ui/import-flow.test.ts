@@ -90,7 +90,7 @@ describe('importIntoStorage', () => {
     // A Detour export of the same groups reuses their ids; merging must re-identify them.
     const detourText = serializeExport({ groups: first.value.groups.map(({ importedFrom: _, ...g }) => g) });
     const again = await importIntoStorage(detourText, area, { fileName: 'detour-export.json' });
-    expect(again).toMatchObject({ ok: true, source: 'detour', groups: 2, replaced: 0 });
+    expect(again).toMatchObject({ ok: true, source: 'overwire', groups: 2, replaced: 0 });
     expect(await groupNames()).toHaveLength(4);
   });
 

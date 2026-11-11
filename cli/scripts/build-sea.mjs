@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Build a self-contained Node SEA for the Detour DB host (ADR-029).
+ * Build a self-contained Node SEA for the Overwire DB host (ADR-029 / plan 041).
  *
- *   corepack pnpm --filter @detour/cli sea:build
+ *   corepack pnpm --filter @overwire/cli sea:build
  *
  * 1. esbuild-bundles cli/src/cli.ts → one CJS file
  * 2. Ensure an official (non-Homebrew) Node binary for injection
@@ -11,7 +11,7 @@
  * 5. Copy @napi-rs/keyring platform package beside the binary
  * 6. Ad-hoc codesign on macOS (required after postject on arm64)
  *
- * Outputs: cli/.sea/detour-db-host[.exe] + node_modules/ + package.json
+ * Outputs: cli/.sea/overwire-db-host[.exe] + node_modules/ + package.json
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
@@ -32,13 +32,13 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
-import { buildSync } from 'esbuild';
+import { build } from 'esbuild';
 
 const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, '.sea');
 const isWin = process.platform === 'win32';
-const outBin = join(outDir, isWin ? 'detour-db-host.exe' : 'detour-db-host');
+const outBin = join(outDir, isWin ? 'overwire-db-host.exe' : 'overwire-db-host');
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
@@ -49,7 +49,7 @@ const config = join(outDir, 'sea-config.json');
 
 console.log('esbuild: bundling cli/src/cli.ts →', entryBundle);
 
-buildSync({
+await build({
   entryPoints: [join(root, 'src', 'cli.ts')],
   bundle: true,
   platform: 'node',
@@ -57,14 +57,34 @@ buildSync({
   format: 'cjs',
   outfile: entryBundle,
   // Avoid import.meta.url paths for packageRoot in SEA — define a sentinel.
+  // Windows requires a drive letter in file URLs (file:///C:/...).
   define: {
-    'import.meta.url': JSON.stringify('file:///detour-sea/cli.js'),
+    'import.meta.url': JSON.stringify(
+      isWin ? 'file:///C:/overwire-sea/cli.js' : 'file:///overwire-sea/cli.js',
+    ),
   },
   external: [
     '@napi-rs/keyring',
     '@napi-rs/keyring-*',
     'kerberos',
     'cpu-features',
+  ],
+  // Optional natives (e.g. ssh2 sshcrypto.node) cannot be inlined; stub so
+  // try/catch loaders fall back to pure-JS paths inside the SEA blob.
+  plugins: [
+    {
+      name: 'stub-native-node-addons',
+      setup(esbuildApi) {
+        esbuildApi.onResolve({ filter: /\.node$/ }, (args) => ({
+          path: args.path,
+          namespace: 'native-node-stub',
+        }));
+        esbuildApi.onLoad({ filter: /.*/, namespace: 'native-node-stub' }, () => ({
+          contents: 'throw new Error("native addon omitted from SEA bundle")',
+          loader: 'js',
+        }));
+      },
+    },
   ],
   logLevel: 'info',
 });
@@ -129,7 +149,7 @@ if (!isWin) {
 
 writeFileSync(
   join(outDir, 'package.json'),
-  `${JSON.stringify({ name: 'detour-db-host', private: true, type: 'commonjs' }, null, 2)}\n`,
+  `${JSON.stringify({ name: 'overwire-db-host', private: true, type: 'commonjs' }, null, 2)}\n`,
 );
 
 const nmOut = join(outDir, 'node_modules');
@@ -150,29 +170,31 @@ if (process.platform === 'darwin') {
 writeFileSync(
   join(outDir, 'README.txt'),
   [
-    'Detour DB SEA host',
+    'Overwire DB SEA host',
     `platform=${process.platform} arch=${process.arch} node=${process.version}`,
-    'Run: ./detour-db-host --version | install | uninstall | doctor',
+    'Run: ./overwire-db-host --version | install | uninstall | doctor',
     'Browsers spawn this binary with no args (native messaging stdio).',
-    'Optional sibling: detour-pickfile[.exe] — native Browse (Win32 / Cocoa).',
+    'Optional sibling: overwire-pickfile[.exe] — native Browse (Win32 / Cocoa).',
+    'Native host: com.overwire.db (also registers legacy com.detour.db).',
     '',
   ].join('\n'),
 );
 
-buildDetourPickfile(outDir);
+buildOverwirePickfile(outDir);
 
 console.log('Wrote', outBin, `(${statSync(outBin).size} bytes)`);
 
 /** Native file-dialog sibling: Win32 Go binary, or macOS clang Cocoa NSOpenPanel. Soft-fail. */
-function buildDetourPickfile(seaDir) {
+function buildOverwirePickfile(seaDir) {
+  // Tool sources stay under tools/detour-pickfile during transition; output is overwire-pickfile.
   const toolDir = join(root, 'tools', 'detour-pickfile');
-  const outName = isWin ? 'detour-pickfile.exe' : 'detour-pickfile';
+  const outName = isWin ? 'overwire-pickfile.exe' : 'overwire-pickfile';
   const outPath = join(seaDir, outName);
 
   if (process.platform === 'darwin' && !isWin) {
     const src = join(toolDir, 'nsopen.m');
     if (!existsSync(src)) {
-      console.warn('detour-pickfile nsopen.m missing; SEA macOS Browse uses AppleScript fallback');
+      console.warn('overwire-pickfile nsopen.m missing; SEA macOS Browse uses AppleScript fallback');
       return;
     }
     const build = spawnSync(
@@ -181,7 +203,7 @@ function buildDetourPickfile(seaDir) {
       { encoding: 'utf8' },
     );
     if (build.status !== 0) {
-      console.warn('detour-pickfile clang failed (continuing):', build.stderr || build.stdout);
+      console.warn('overwire-pickfile clang failed (continuing):', build.stderr || build.stdout);
       return;
     }
     try {
@@ -194,12 +216,12 @@ function buildDetourPickfile(seaDir) {
   }
 
   if (!existsSync(join(toolDir, 'go.mod'))) {
-    console.warn('detour-pickfile tool missing; SEA will fall back to PowerShell Browse on Windows');
+    console.warn('overwire-pickfile tool missing; SEA will fall back to PowerShell Browse on Windows');
     return;
   }
   const go = spawnSync('go', ['env', 'GOROOT'], { encoding: 'utf8' });
   if (go.status !== 0) {
-    console.warn('go not found — skipping detour-pickfile build (Windows Browse uses PowerShell fallback)');
+    console.warn('go not found — skipping overwire-pickfile build (Windows Browse uses PowerShell fallback)');
     return;
   }
   const build = spawnSync(
@@ -212,7 +234,7 @@ function buildDetourPickfile(seaDir) {
     },
   );
   if (build.status !== 0) {
-    console.warn('detour-pickfile build failed (continuing):', build.stderr || build.stdout);
+    console.warn('overwire-pickfile build failed (continuing):', build.stderr || build.stdout);
     return;
   }
   if (!isWin) {
@@ -230,8 +252,9 @@ function buildDetourPickfile(seaDir) {
  * and cannot be used as a SEA base (postject / SEA docs).
  */
 async function resolveOfficialNodeBinary(seaDir) {
-  if (process.env.DETOUR_SEA_NODE && existsSync(process.env.DETOUR_SEA_NODE)) {
-    return process.env.DETOUR_SEA_NODE;
+  const seaNode = (process.env.BRAND_SEA_NODE || process.env.DETOUR_SEA_NODE || '').trim();
+  if (seaNode && existsSync(seaNode)) {
+    return seaNode;
   }
   if (isLikelyOfficialNode(process.execPath)) {
     return process.execPath;

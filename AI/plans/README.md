@@ -45,7 +45,8 @@ Implementation plans live **only** here. Numbered `NNN-short-name.md`.
 | [038-helper-hint-width.md](038-helper-hint-width.md) | Done (2026-10-23) — full helper hint, no General seed, Detour delete modal, Connection hug height |
 | [039-browse-path-lock.md](039-browse-path-lock.md) | Done (2026-10-23) — path Browse lock, required asterisks, Connection fit-content hug |
 | [040-marketing-changelog-workbench.md](040-marketing-changelog-workbench.md) | Done (2026-10-23) — marketing workbench + Changelog; detour-web + protovoid-web redeployed |
+| [041-overwire-rebrand-monetization-perf.md](041-overwire-rebrand-monetization-perf.md) | **In Progress** (2026-11-10) — rebrand + site/CLI landed; `licensing.md` Draft + webhook template; gates blocked on Approve |
 
-New plans only for **Approved** specs (`spec-workflow` gate).
+New plans only for **Approved** specs (`spec-workflow` gate). Monetization extension gates additionally require Approved `licensing.md` (ADR-032).
 
 Use project skill `plan-workflow` when creating or executing plans.

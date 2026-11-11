@@ -15,20 +15,30 @@ const sequentialIds = () => {
 const ALL_TYPES = [...RESOURCE_TYPES];
 const importFixture = (input: unknown) => importWorkspace(input, { newId: sequentialIds() });
 
-describe('Detour export/import', () => {
-  it('round-trips the golden export byte-for-byte', () => {
+describe('Overwire / Detour export/import', () => {
+  it('imports a legacy Detour golden export and re-exports with product overwire', () => {
     const result = importFixture(JSON.stringify(golden));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.source).toBe('detour');
-    expect(serializeExport(result.workspace)).toBe(`${JSON.stringify(golden, null, 2)}\n`);
+    const again = JSON.parse(serializeExport(result.workspace)) as { product?: string; v: number; data: unknown };
+    expect(again.product).toBe('overwire');
+    expect(again.v).toBe(1);
+    expect(again.data).toEqual(golden.data);
+    const reimport = importFixture(again);
+    expect(reimport.ok && reimport.source).toBe('overwire');
+  });
+
+  it('imports an explicit overwire envelope', () => {
+    const result = importFixture({ v: 1, product: 'overwire', data: { groups: [] } });
+    expect(result.ok && result.source).toBe('overwire');
   });
 
   it.each([
     ['broken JSON', '{"v": 1,', /^Not valid JSON/],
     ['a bare array', '[]', /Expected a JSON object/],
     ['the empty {} export bug', '{}', /empty object/],
-    ['a wrong version', { v: 3, data: { groups: [] } }, /^v: Unsupported Detour schema version/],
+    ['a wrong version', { v: 3, data: { groups: [] } }, /^v: Unsupported schema version/],
     ['a bad rule deep inside', { v: 1, data: { groups: [{ id: 'g', name: '', enabled: true, rules: [{ id: 'r', enabled: true, match: { kind: 'glob', pattern: '' }, action: { type: 'block' } }] }] } }, /^data\.groups\.0\.rules\.0\.match\.pattern: Must not be empty/],
   ])('rejects %s with an actionable error', (_, input, expected) => {
     const result = importFixture(input);

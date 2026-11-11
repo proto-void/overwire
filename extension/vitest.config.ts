@@ -22,6 +22,7 @@ export default defineConfig({
       defaultTheme: 'dark',
     }),
     'import.meta.env.PARTNER_LOGO_URL': JSON.stringify(''),
+    'import.meta.env.LICENSE_VERIFY_PUBLIC_KEY': JSON.stringify(''),
   },
   test: {
     include: ['src/**/*.test.ts'],

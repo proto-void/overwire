@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Workspace } from '../rule-model/schema';
-import { applyDetourRules } from './apply-rules';
+import { brandName } from '../ui/brand-config';
+import { applyRules } from './apply-rules';
 
 const ws = (...rules: Workspace['groups'][0]['rules']): Workspace => ({
   groups: [{ id: 'g', name: 'G', enabled: true, rules }],
 });
 
-describe('applyDetourRules', () => {
+describe('applyRules', () => {
   it('rewrites URL on redirect', () => {
     const workspace = ws({
       id: 'r1',
@@ -15,7 +16,7 @@ describe('applyDetourRules', () => {
       action: { type: 'redirect', to: 'http://localhost:5173/*' },
       resourceTypes: ['xmlhttprequest'],
     });
-    const out = applyDetourRules(workspace, {
+    const out = applyRules(workspace, {
       method: 'GET',
       url: 'https://cdn.example.com/app.js',
       headers: {},
@@ -24,7 +25,7 @@ describe('applyDetourRules', () => {
     expect(out.kind).toBe('network');
     if (out.kind !== 'network') return;
     expect(out.request.url).toBe('http://localhost:5173/app.js');
-    expect(out.label).toBe('Detour rules applied (simulated)');
+    expect(out.label).toBe(`${brandName} rules applied (simulated)`);
   });
 
   it('returns blocked without network', () => {
@@ -35,7 +36,7 @@ describe('applyDetourRules', () => {
       action: { type: 'block' },
       resourceTypes: ['xmlhttprequest'],
     });
-    const out = applyDetourRules(workspace, {
+    const out = applyRules(workspace, {
       method: 'GET',
       url: 'https://api.example.com/secret',
       headers: {},
@@ -53,7 +54,7 @@ describe('applyDetourRules', () => {
       match: { kind: 'glob', pattern: 'https://api.example.com/users' },
       action: { type: 'mock', status: 200, body: '{"users":[]}', method: 'GET', headers: [], delayMs: 0 },
     });
-    const out = applyDetourRules(workspace, {
+    const out = applyRules(workspace, {
       method: 'GET',
       url: 'https://api.example.com/users',
       headers: {},
@@ -77,7 +78,7 @@ describe('applyDetourRules', () => {
       },
       resourceTypes: ['xmlhttprequest'],
     });
-    const out = applyDetourRules(workspace, {
+    const out = applyRules(workspace, {
       method: 'GET',
       url: 'https://api.example.com/a',
       headers: { Accept: 'application/json' },

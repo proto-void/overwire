@@ -408,7 +408,7 @@ export type RuleStatus =
   | { kind: 'unsaved' }
   | { kind: 'off'; because: 'rule' | 'group' }
   | { kind: 'pending' }
-  | { kind: 'detour-off' }
+  | { kind: 'off-global' }
   | { kind: 'applied' }
   | { kind: 'refused'; label: string; message: string }
   /** Registered, but a page reported a failure since the last apply. */
@@ -521,7 +521,7 @@ export function ruleStatus(draftRule: Rule, { report, saved, awaitingApply, fail
   if (!stored.group.enabled) return { kind: 'off', because: 'group' };
   if (!stored.rule.enabled) return { kind: 'off', because: 'rule' };
   if (awaitingApply || !report) return { kind: 'pending' };
-  if (report.disabled) return { kind: 'detour-off' };
+  if (report.disabled) return { kind: 'off-global' };
   const refused = report.refused.find((r) => r.ruleId === draftRule.id);
   if (refused) return { kind: 'refused', label: REASON_LABELS[refused.reason], message: refused.message };
   if (report.applied.some((a) => a.ruleId === draftRule.id)) return { kind: 'applied' };
@@ -537,7 +537,7 @@ export function ruleStatus(draftRule: Rule, { report, saved, awaitingApply, fail
 export const isAwaitingApply = (report: ApplyReport | undefined, savedAt: number | undefined): boolean =>
   savedAt !== undefined && (!report || Date.parse(report.appliedAt) < savedAt);
 
-export const exportFileName = (date: Date): string => `detour-${date.toISOString().slice(0, 10)}.json`;
+export const exportFileName = (date: Date): string => `overwire-${date.toISOString().slice(0, 10)}.json`;
 
 /** Move a rule to an absolute index within its group (for drag-and-drop). */
 export function moveRuleToIndex(ws: Workspace, groupId: string, ruleId: string, toIndex: number): Workspace {
@@ -618,7 +618,7 @@ export function statusCounts(
       if (status.kind === 'applied') counts.applied += 1;
       else if (status.kind === 'refused' || status.kind === 'failing') counts.refused += 1;
       else if (status.kind === 'unsaved' || status.kind === 'pending') counts.unsaved += 1;
-      else if (status.kind === 'off' || status.kind === 'detour-off' || status.kind === 'not-applied') counts.off += 1;
+      else if (status.kind === 'off' || status.kind === 'off-global' || status.kind === 'not-applied') counts.off += 1;
     }
   }
   return counts;
@@ -645,7 +645,7 @@ export function filterRules(
         } else if (statusFilter === 'unsaved') {
           if (kind !== 'unsaved' && kind !== 'pending') continue;
         } else if (statusFilter === 'off') {
-          if (kind !== 'off' && kind !== 'detour-off' && kind !== 'not-applied') continue;
+          if (kind !== 'off' && kind !== 'off-global' && kind !== 'not-applied') continue;
         } else if (kind !== statusFilter) continue;
       }
       if (q) {

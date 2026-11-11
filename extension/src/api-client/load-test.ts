@@ -12,7 +12,7 @@ export interface LoadTestOptions {
   request: ApiRequest;
   count: number;
   concurrency: number;
-  globalApplyDetour: boolean;
+  globalApplyRules: boolean;
   workspace: Workspace;
   scopes: VariableScopes;
   sandboxUrl?: string;
@@ -69,7 +69,7 @@ export async function runLoadTest(options: LoadTestOptions): Promise<LoadTestSta
         request: options.request,
         scopes: options.scopes,
         workspace: options.workspace,
-        globalApplyDetour: options.globalApplyDetour,
+        globalApplyRules: options.globalApplyRules,
         skipScripts: true,
         dnr: options.dnr,
         fetchImpl: options.fetchImpl,

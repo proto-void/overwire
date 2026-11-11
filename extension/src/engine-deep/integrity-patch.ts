@@ -22,7 +22,9 @@ const MAX_PATCHES = 100;
 const MAX_PATTERN = 2000;
 const MAX_META = 100_000;
 
-export const SRI_META_NAME = 'detour-sri';
+export const SRI_META_NAME = 'overwire-sri';
+/** Pre-Overwire meta name; strip on rewrite and accept once as a MAIN-hook fallback. */
+export const LEGACY_SRI_META_NAME = 'detour-sri';
 
 export function isPublishableHash(value: string): boolean {
   return SHA384.test(value);
@@ -128,7 +130,10 @@ export function decodePatchList(content: string): IntegrityPatch[] {
 /** Insert the list where the parser will see it before any page script. */
 export function injectPatchMeta(html: string, encoded: string): string {
   const meta = `<meta name="${SRI_META_NAME}" content="${encoded}">`;
-  const without = html.replace(/<meta\b[^>]*\bname\s*=\s*(?:"detour-sri"|'detour-sri')[^>]*>/gi, '');
+  const without = html.replace(
+    /<meta\b[^>]*\bname\s*=\s*(?:"overwire-sri"|'overwire-sri'|"detour-sri"|'detour-sri')[^>]*>/gi,
+    '',
+  );
   const doctype = /<!doctype\b[^>]*>/i.exec(without);
   if (doctype && doctype.index < 1000) {
     const end = doctype.index + doctype[0].length;
@@ -194,10 +199,11 @@ export function installIntegrityPatch(root: PatchRoot): void {
   let applying = false;
   let adopting = false;
 
-  const selector = `meta[name="${SRI_META_NAME}"]`;
   const snapshot = (): boolean => {
     if (frozen) return true;
-    const meta = root.document.querySelector(selector);
+    const meta =
+      root.document.querySelector(`meta[name="${SRI_META_NAME}"]`) ??
+      root.document.querySelector(`meta[name="${LEGACY_SRI_META_NAME}"]`);
     if (!meta) return false;
     frozen = true;
     const content = meta.getAttribute('content') ?? '';

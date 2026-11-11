@@ -1,6 +1,6 @@
 # Conventions
 
-**Last verified:** 2026-10-09 (plan 029 partner hooks / ADR-030; OS packs)
+**Last verified:** 2026-11-10 (default BRAND=overwire cutover; content-script ids; ADR-031)
 
 ## Docs / KB
 
@@ -26,22 +26,25 @@ Nested `<details>` at most two levels. Planned-only features go under a single *
 
 ## Naming
 
-- Product: **Detour**
+- Product: **Overwire** (formerly Detour; ADR-031). Default build slug `overwire`; legacy `BRAND=detour` / `brands/detour/`
+- Mark: Concept A Bypass Arc only (do not ship Concept B/C)
 - Spec files: `kebab-case.md`
 - Plans: `NNN-kebab-case.md`
-- npm: `@detour/*` (unscoped `detour` taken); extension package is `@detour/extension`
+- npm (current): `@overwire/*` (root `overwire`); extension package `@overwire/extension`
+- Neutral internals (keep storage top-level keys): `applyRules`, `overwire-api-run:`, `overwire-` user scripts, content scripts `overwire-bridge` / `overwire-mock` / `overwire-sri` (+ meta `overwire-sri`, message `overwire:resync`), `off-global`, `text/overwire-query-id`, `overwire-api-script-*`, export `product: 'overwire'` + `overwire-*.json` — with Detour legacy unregister/read-fallbacks
+- Domains (target): `overwire.protovoid.com`; GitHub: `proto-void/overwire` (+ `proto-void/overwire-web`)
 
 ## Cross-platform (extension + CLI Databases helper)
 
 - **No OS-specific hardcoding** as the sole path: prefer `process.execPath`, `path.join`, and `platform()` switches that cover `win32` | `darwin` | `linux`
-- OS packs are the default user path; `detour db install` remains for developers (embeds absolute Node path for GUI browsers)
-- SEA self-install copies to a stable per-user dir; manifest `path` points at the binary (no Node)
-- Launchers (dev only): darwin/linux → bash `detour-db-host`; Windows → `detour-db-host.cmd` + HKCU registry
+- OS packs are the default user path; `overwire db install` remains for developers (embeds absolute Node path for GUI browsers); `detour` bin is a one-release shim
+- SEA self-install copies to `…/Overwire/db-host/` (legacy `…/Detour/db-host/` still discovered); manifest `path` points at the binary (no Node)
+- Launchers (dev only): darwin/linux → bash `overwire-db-host`; Windows → `overwire-db-host.cmd` + HKCU registry for both `com.overwire.db` and `com.detour.db`
 - Windows paths use `%LOCALAPPDATA%` / `%APPDATA%`; Linux respects `XDG_CONFIG_HOME` / `XDG_DATA_HOME`
 - Pack README templates live under `cli/pack/templates/` (single source with root README / in-pack guides)
-- Native messaging from the extension: `connectNativePort` (`chrome.runtime.connectNative` first) — never assume WXT `browser.runtime.connectNative` exists on Chromium
-- Brand host: `nativeHostName` in `brands/*/brand.ts` (default `com.detour.db`); build may use `DETOUR_BRAND_DIR` for an absolute out-of-tree brand directory (ADR-030)
-- Contract tests against a foreign host binary: `DETOUR_DB_HOST_CMD=/path/to/binary`
+- Native messaging from the extension: `connectNativePort` (`chrome.runtime.connectNative` first) — never assume WXT `browser.runtime.connectNative` exists on Chromium; RPC client falls back to `com.detour.db` if Overwire host disconnects
+- Brand host: `nativeHostName` in `brands/*/brand.ts` (`com.overwire.db` for overwire; detour brand keeps `com.detour.db`); build may use `BRAND_DIR` / `DETOUR_BRAND_DIR`
+- Contract tests against a foreign host binary: `BRAND_DB_HOST_CMD` or `DETOUR_DB_HOST_CMD`
 
 ## Code
 

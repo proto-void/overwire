@@ -77,14 +77,21 @@ describe('rewriteMarkupIntegrity', () => {
 describe('injectPatchMeta', () => {
   it('places the list after the doctype and replaces an older copy', () => {
     const once = injectPatchMeta('<!doctype html><title>t</title><script src="/a.js"></script>', 'abc');
-    expect(once.startsWith('<!doctype html><meta name="detour-sri" content="abc">')).toBe(true);
+    expect(once.startsWith('<!doctype html><meta name="overwire-sri" content="abc">')).toBe(true);
     const twice = injectPatchMeta(once, 'def');
-    expect(twice.match(/detour-sri/g)).toHaveLength(1);
+    expect(twice.match(/overwire-sri/g)).toHaveLength(1);
     expect(twice).toContain('content="def"');
+  });
+
+  it('strips legacy detour-sri meta before inserting overwire-sri', () => {
+    const next = injectPatchMeta('<!doctype html><meta name="detour-sri" content="old"><title>t</title>', 'new');
+    expect(next).toContain('name="overwire-sri"');
+    expect(next).toContain('content="new"');
+    expect(next).not.toContain('detour-sri');
   });
 });
 
-function createRealm(initial: string | null) {
+function createRealm(initial: string | null, options: { legacyOnly?: boolean } = {}) {
   class Node {
     parent: Node | null = null;
     _nodeValue: string | null = null;
@@ -341,8 +348,15 @@ function createRealm(initial: string | null) {
       documentElement: new Element(),
       readyState: 'loading',
       querySelector(selector: string) {
-        if (selector !== 'meta[name="detour-sri"]' || content === null) return null;
-        return { getAttribute: () => content };
+        if (content === null) return null;
+        if (selector === 'meta[name="overwire-sri"]') {
+          if (options.legacyOnly) return null;
+          return { getAttribute: () => content };
+        }
+        if (selector === 'meta[name="detour-sri"]') {
+          return { getAttribute: () => content };
+        }
+        return null;
       },
       addEventListener() {},
     },
@@ -383,6 +397,16 @@ function createRealm(initial: string | null) {
 }
 
 describe('installIntegrityPatch', () => {
+  it('falls back to legacy detour-sri meta when overwire-sri is absent', async () => {
+    const hash = await integrityMetadata(encoder.encode('legacy-meta'));
+    const realm = createRealm(encodePatchList([patch({ integrity: hash })]), { legacyOnly: true });
+    installIntegrityPatch(realm.root);
+    const matched = new realm.HTMLScriptElement();
+    matched.src = 'http://127.0.0.1:8001/sri-js.js';
+    matched.integrity = BAD;
+    expect(matched.getAttribute('integrity')).toBe(hash);
+  });
+
   it('substitutes the hash when the page sets integrity, and leaves a sibling alone', async () => {
     const hash = await integrityMetadata(encoder.encode('window.SRI_JS = "LOCAL";'));
     const encoded = encodePatchList([patch({ integrity: hash })]);

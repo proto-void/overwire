@@ -9,7 +9,7 @@ describe('runLoadTest', () => {
       request: { ...emptyRequest('1'), url: 'https://example.test/x' },
       count: 20,
       concurrency: 5,
-      globalApplyDetour: false,
+      globalApplyRules: false,
       workspace: { groups: [] },
       scopes: {},
       fetchImpl: async () => {
@@ -31,7 +31,7 @@ describe('runLoadTest', () => {
       request: { ...emptyRequest('1'), url: 'https://example.test/x' },
       count: LOAD_TEST_SAFE_CAP + 10,
       concurrency: 10,
-      globalApplyDetour: false,
+      globalApplyRules: false,
       workspace: { groups: [] },
       scopes: {},
       fetchImpl: async () => new Response('ok', { status: 200 }),

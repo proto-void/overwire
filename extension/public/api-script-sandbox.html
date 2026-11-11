@@ -2,12 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Detour API script sandbox</title>
+    <title>Overwire API script sandbox</title>
   </head>
   <body>
     <!--
       MV3 sandbox page (null origin). No extension APIs.
-      Host posts detour-api-script-run; we reply with detour-api-script-result.
+      Host posts overwire-api-script-run (legacy detour-api-script-run accepted);
+      we reply with overwire-api-script-result.
       pm.expect is a chai-compatible subset embedded for the null-origin sandbox.
     -->
     <script>
@@ -198,7 +199,7 @@
 
         window.addEventListener('message', function (event) {
           const data = event.data;
-          if (!data || data.type !== 'detour-api-script-run') return;
+          if (!data || (data.type !== 'overwire-api-script-run' && data.type !== 'detour-api-script-run')) return;
           const built = buildPm(data.context || { request: { method: 'GET', url: '', headers: {}, body: null } });
           let ok = true;
           let error;
@@ -214,7 +215,7 @@
           });
           event.source.postMessage(
             {
-              type: 'detour-api-script-result',
+              type: 'overwire-api-script-result',
               id: data.id,
               ok: ok && allPass,
               error: error,

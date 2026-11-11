@@ -68,6 +68,7 @@
   }
 
   function onDragStart(e: DragEvent, queryId: string) {
+    e.dataTransfer?.setData('text/overwire-query-id', queryId);
     e.dataTransfer?.setData('text/detour-query-id', queryId);
     e.dataTransfer?.setData('text/plain', queryId);
     if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
@@ -87,6 +88,7 @@
     e.preventDefault();
     dropTarget = null;
     const queryId =
+      e.dataTransfer?.getData('text/overwire-query-id') ||
       e.dataTransfer?.getData('text/detour-query-id') ||
       e.dataTransfer?.getData('text/plain');
     if (!queryId) return;

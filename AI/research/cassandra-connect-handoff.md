@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Public repo** | [proto-void/detour](https://github.com/proto-void/detour) |
+| **Public repo** | [proto-void/overwire](https://github.com/proto-void/overwire) |
 | **Product site** | [https://detour.dev](https://detour.dev) |
 | **Branch** | `main` |
 | **Access model** | **GitHub-only** — this handoff is self-contained; the receiving agent has no local checkout or private repos |
@@ -25,7 +25,7 @@ Deliver a root-cause note and (if code) a minimal fix plus unit test. No secrets
 
 ## 2. Scope note (public vs private)
 
-| Surface | In public `proto-void/detour`? | Stack |
+| Surface | In public `proto-void/overwire`? | Stack |
 | --- | --- | --- |
 | Extension UI + `db-client` | Yes | TypeScript / Svelte |
 | Native host `com.detour.db` | Yes — under `cli/` | **Node** + `cassandra-driver` only |
@@ -59,15 +59,15 @@ Deliver a root-cause note and (if code) a minimal fix plus unit test. No secrets
 └─────────────────────────────┘
 ```
 
-High-level product architecture: [AI/intelligence/architecture.md](https://github.com/proto-void/detour/blob/main/AI/intelligence/architecture.md).
+High-level product architecture: [AI/intelligence/architecture.md](https://github.com/proto-void/overwire/blob/main/AI/intelligence/architecture.md).
 
 ---
 
 ## 4. Canonical links (start here)
 
-- Architecture: https://github.com/proto-void/detour/blob/main/AI/intelligence/architecture.md  
-- README (DB URL examples, install helper): https://github.com/proto-void/detour/blob/main/README.md  
-- Spec: https://github.com/proto-void/detour/blob/main/AI/specs/db-client.md  
+- Architecture: https://github.com/proto-void/overwire/blob/main/AI/intelligence/architecture.md  
+- README (DB URL examples, install helper): https://github.com/proto-void/overwire/blob/main/README.md  
+- Spec: https://github.com/proto-void/overwire/blob/main/AI/specs/db-client.md  
 
 ---
 
@@ -77,26 +77,26 @@ Open these in order when tracing a connect failure:
 
 | Area | File |
 | --- | --- |
-| Host config from UI | https://github.com/proto-void/detour/blob/main/extension/src/db-client/url.ts (`buildHostConfig`) |
-| Databases UI | https://github.com/proto-void/detour/blob/main/extension/src/entrypoints/options/Databases.svelte |
-| Native messaging / JSON-RPC | https://github.com/proto-void/detour/blob/main/extension/src/db-client/protocol.ts |
-| Connection model | https://github.com/proto-void/detour/blob/main/extension/src/db-client/model.ts |
-| Field defs / labels | https://github.com/proto-void/detour/blob/main/extension/src/db-client/fields.ts |
-| Host entry / connect pipeline | https://github.com/proto-void/detour/blob/main/cli/src/db/host.ts |
-| TLS path hydrate + **SNI rename** | https://github.com/proto-void/detour/blob/main/cli/src/db/paths.ts (`serverName` → `servername`) |
-| Shared TLS flatten | https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/tls-from-config.ts |
-| Driver option builder | https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra-config.ts |
-| Adapter connect / probe | https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra.ts |
-| Adapter registry | https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/registry.ts |
-| Unit tests (options / TLS / auth) | https://github.com/proto-void/detour/blob/main/cli/src/db/cassandra-config.test.ts |
-| Known traps | https://github.com/proto-void/detour/blob/main/AI/intelligence/gotchas.md |
-| Local DB compose (optional) | https://github.com/proto-void/detour/blob/main/docker-compose.db.yml |
+| Host config from UI | https://github.com/proto-void/overwire/blob/main/extension/src/db-client/url.ts (`buildHostConfig`) |
+| Databases UI | https://github.com/proto-void/overwire/blob/main/extension/src/entrypoints/options/Databases.svelte |
+| Native messaging / JSON-RPC | https://github.com/proto-void/overwire/blob/main/extension/src/db-client/protocol.ts |
+| Connection model | https://github.com/proto-void/overwire/blob/main/extension/src/db-client/model.ts |
+| Field defs / labels | https://github.com/proto-void/overwire/blob/main/extension/src/db-client/fields.ts |
+| Host entry / connect pipeline | https://github.com/proto-void/overwire/blob/main/cli/src/db/host.ts |
+| TLS path hydrate + **SNI rename** | https://github.com/proto-void/overwire/blob/main/cli/src/db/paths.ts (`serverName` → `servername`) |
+| Shared TLS flatten | https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/tls-from-config.ts |
+| Driver option builder | https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra-config.ts |
+| Adapter connect / probe | https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra.ts |
+| Adapter registry | https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/registry.ts |
+| Unit tests (options / TLS / auth) | https://github.com/proto-void/overwire/blob/main/cli/src/db/cassandra-config.test.ts |
+| Known traps | https://github.com/proto-void/overwire/blob/main/AI/intelligence/gotchas.md |
+| Local DB compose (optional) | https://github.com/proto-void/overwire/blob/main/docker-compose.db.yml |
 
 ---
 
 ## 6. `buildHostConfig` JSON shape
 
-Built in [`url.ts`](https://github.com/proto-void/detour/blob/main/extension/src/db-client/url.ts). Sent as `params.config` on connect (plus separate `secretAccount`).
+Built in [`url.ts`](https://github.com/proto-void/overwire/blob/main/extension/src/db-client/url.ts). Sent as `params.config` on connect (plus separate `secretAccount`).
 
 Relevant Cassandra fields (illustrative; omit empties in real payloads):
 
@@ -147,10 +147,10 @@ Relevant Cassandra fields (illustrative; omit empties in real payloads):
 On `db.connect` (names may vary slightly; follow `host.ts`):
 
 1. **`applySecrets(config, secretAccount)`** — password, SSH key/pass, TLS key passphrase, JKS passwords, proxy password from keychain into the in-memory config.
-2. **`hydrateTls` / `resolveTlsFiles`** ([`paths.ts`](https://github.com/proto-void/detour/blob/main/cli/src/db/paths.ts)) — read CA/cert/key (or JKS), map **`tls.serverName` → `tls.servername`**, set `rejectUnauthorized` / `minVersion`.
+2. **`hydrateTls` / `resolveTlsFiles`** ([`paths.ts`](https://github.com/proto-void/overwire/blob/main/cli/src/db/paths.ts)) — read CA/cert/key (or JKS), map **`tls.serverName` → `tls.servername`**, set `rejectUnauthorized` / `minVersion`.
 3. **SSH / proxy rewrite** — if enabled, tunnel and rewrite `host` / `contactPoints` toward the local listener (often `127.0.0.1`).
-4. **`buildCassandraOptions(config)`** ([`cassandra-config.ts`](https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra-config.ts)).
-5. **`Client.connect()`** via [`cassandra.ts`](https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra.ts).
+4. **`buildCassandraOptions(config)`** ([`cassandra-config.ts`](https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra-config.ts)).
+5. **`Client.connect()`** via [`cassandra.ts`](https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra.ts).
 6. **Probe:** `SELECT release_version FROM system.local`.
 
 ---
@@ -173,9 +173,9 @@ From `buildCassandraOptions` / `toDriverOptions`:
 **Observed wiring:**
 
 1. Extension sends `tls.serverName` (camelCase) in `buildHostConfig`.
-2. [`paths.ts` `resolveTlsFiles`](https://github.com/proto-void/detour/blob/main/cli/src/db/paths.ts) maps `tls.serverName` → **`servername`** on the hydrated TLS object.
-3. [`cassandra-config.ts`](https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra-config.ts) builds `sslOptions` with `rejectUnauthorized`, `ca`, `cert`, `key`, `passphrase` — **but does not copy `servername` / SNI**.
-4. [`cassandra.ts` `toDriverOptions`](https://github.com/proto-void/detour/blob/main/cli/src/db/adapters/cassandra.ts) assigns `opts.sslOptions = built.sslOptions` — still **no SNI**.
+2. [`paths.ts` `resolveTlsFiles`](https://github.com/proto-void/overwire/blob/main/cli/src/db/paths.ts) maps `tls.serverName` → **`servername`** on the hydrated TLS object.
+3. [`cassandra-config.ts`](https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra-config.ts) builds `sslOptions` with `rejectUnauthorized`, `ca`, `cert`, `key`, `passphrase` — **but does not copy `servername` / SNI**.
+4. [`cassandra.ts` `toDriverOptions`](https://github.com/proto-void/overwire/blob/main/cli/src/db/adapters/cassandra.ts) assigns `opts.sslOptions = built.sslOptions` — still **no SNI**.
 
 **Why it matters:** Connecting with **verify-full** to an **IP** (or via SSH rewrite to `127.0.0.1`) while the cert is issued for a hostname requires Node TLS **`servername`** (SNI). Other clients that set SNI succeed; Detour’s Node path can fail with certificate hostname / handshake errors even when CA + client cert/key are correct.
 
@@ -196,7 +196,7 @@ Compare: Redis adapter in the same host **does** pass `servername` into TLS opti
 | **Port / target** | Wrong `target` (cosmos vs apache) or port 9042 vs 10350 vs 9142 | `target`, `protocolOptions.port` |
 | **Stale helper** | Code fixed but installed native host old | Reinstall/reload host per README; “Reload extension” alone is insufficient for host binary changes |
 
-Also skim: https://github.com/proto-void/detour/blob/main/AI/intelligence/gotchas.md (Cassandra / TLS / helper install notes).
+Also skim: https://github.com/proto-void/overwire/blob/main/AI/intelligence/gotchas.md (Cassandra / TLS / helper install notes).
 
 ---
 
@@ -222,7 +222,7 @@ keyspaces://USER:PASS@cassandra.us-east-1.amazonaws.com:9142/?region=us-east-1
 cosmos://myaccount:ACCOUNT_KEY@myaccount.cassandra.cosmos.azure.com:10350/
 ```
 
-Source: https://github.com/proto-void/detour/blob/main/README.md  
+Source: https://github.com/proto-void/overwire/blob/main/README.md  
 
 URL → draft mapping lives in `connectionFromUrl` in the same `url.ts` as `buildHostConfig`.
 

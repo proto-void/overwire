@@ -10,10 +10,15 @@ Before any non-trivial work:
 
 Product facts in `AI/` win over vendor skill defaults. No secrets in the knowledge base. No `extension/` or `cli/` code until specs are Approved.
 
-## Extension delivery
+## Extension delivery (dual brand zip DoD)
 
-- **Detour zip only:** every extension delivery that changes `extension/` ends with:
-  - `corepack pnpm --filter @detour/extension zip` → `extension/.output/detour/detour-<version>-chrome.zip`
-- Report the Detour zip path in the delivery summary.
-- Brand system remains build-time `DETOUR_BRAND` (default `detour`) with committed `brands/detour/` + `_template/`. Partner Rogers product retired (plan 033); do not revive `zip:rogers` or a private `rogers-detour` tree.
-- Subagent prompts that change `extension/` must include this Detour-only zip DoD.
+Build-time brand env: prefer `BRAND` / `BRAND_DIR` / `BRAND_NAME` / `BRAND_OMIT_CHROMIUM_MANIFEST_KEY`; `DETOUR_*` equivalents still work. **Default brand is `overwire`** (cutover 2026-11-10 after CWS rebrand submit).
+
+Every extension delivery that changes `extension/` ends with a zip for the brand under test:
+
+- **Default (Overwire):** `corepack pnpm --filter @overwire/extension zip` → `extension/.output/overwire/overwire-<version>-chrome.zip`
+- **Detour flavor (legacy):** `BRAND=detour` (or `DETOUR_BRAND=detour`) `corepack pnpm --filter @overwire/extension zip` → `extension/.output/detour/detour-<version>-chrome.zip`
+
+Report the zip path(s) in the delivery summary. Packages are `@overwire/extension` + `@overwire/cli` (root name `overwire`). Native host: `com.overwire.db` with automatic fallback / dual-register of `com.detour.db`. Partner Rogers product retired (plan 033); do not revive `zip:rogers` or a private `rogers-detour` tree.
+
+Subagent prompts that change `extension/` must include this dual-brand zip DoD.

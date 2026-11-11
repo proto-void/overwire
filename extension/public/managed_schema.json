@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "licenseKey": {
+      "title": "Overwire license key",
+      "description": "Optional org Pro/Team key (OWPRO.<payload>.<sig>). Preferred over a user-pasted key when valid.",
+      "type": "string"
+    }
+  }
+}

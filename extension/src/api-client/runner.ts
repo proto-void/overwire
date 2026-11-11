@@ -19,7 +19,7 @@ export interface RunnerOptions {
   dataFileHint?: 'csv' | 'json';
   delayMs?: number;
   stopOnFail?: boolean;
-  globalApplyDetour: boolean;
+  globalApplyRules: boolean;
   workspace: Workspace;
   scopes: VariableScopes;
   sandboxUrl?: string;
@@ -154,7 +154,7 @@ export async function runCollection(options: RunnerOptions): Promise<RunnerRepor
           request: req,
           scopes: withDataRow(scopes, dataRow),
           workspace: options.workspace,
-          globalApplyDetour: options.globalApplyDetour,
+          globalApplyRules: options.globalApplyRules,
           sandboxUrl: options.sandboxUrl,
           skipScripts: options.skipScripts,
           dnr: options.dnr,

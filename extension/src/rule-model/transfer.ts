@@ -2,14 +2,18 @@ import { importResourceOverride, type ImportNotice, type RoImport } from './ro-i
 import { parseEnvelope, SCHEMA_VERSION, type Envelope, type Group, type ImportSource, type Workspace } from './schema';
 
 export type ImportResult =
-  | { ok: true; source: 'detour' | RoImport['source']; workspace: Workspace; skipped: ImportNotice[]; warnings: ImportNotice[] }
+  | { ok: true; source: 'overwire' | 'detour' | RoImport['source']; workspace: Workspace; skipped: ImportNotice[]; warnings: ImportNotice[] }
   | { ok: false; errors: string[] };
 
 export interface ImportOptions {
   newId?: () => string;
 }
 
-export const exportWorkspace = (workspace: Workspace): Envelope => ({ v: SCHEMA_VERSION, data: workspace });
+export const exportWorkspace = (workspace: Workspace): Envelope => ({
+  v: SCHEMA_VERSION,
+  product: 'overwire',
+  data: workspace,
+});
 
 export const serializeExport = (workspace: Workspace): string => `${JSON.stringify(exportWorkspace(workspace), null, 2)}\n`;
 
@@ -86,8 +90,8 @@ export async function sha256Hex(text: string): Promise<string> {
 const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 /**
- * Imports a Detour export or a Resource Override export (detected by its array-shaped `data` /
- * `ruleGroups`). Never returns an empty workspace silently: malformed input yields errors.
+ * Imports an Overwire/Detour export or a Resource Override export (detected by its array-shaped
+ * `data` / `ruleGroups`). Never returns an empty workspace silently: malformed input yields errors.
  */
 export function importWorkspace(input: unknown, { newId = () => crypto.randomUUID() }: ImportOptions = {}): ImportResult {
   let value = input;
@@ -111,6 +115,8 @@ export function importWorkspace(input: unknown, { newId = () => crypto.randomUUI
     return ro.ok ? { ok: true, ...ro.value } : ro;
   }
 
-  const detour = parseEnvelope(value);
-  return detour.ok ? { ok: true, source: 'detour', workspace: detour.value.data, skipped: [], warnings: [] } : detour;
+  const envelope = parseEnvelope(value);
+  if (!envelope.ok) return envelope;
+  const source = envelope.value.product === 'overwire' ? 'overwire' : 'detour';
+  return { ok: true, source, workspace: envelope.value.data, skipped: [], warnings: [] };
 }

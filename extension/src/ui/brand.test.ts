@@ -3,12 +3,12 @@ import { brand, brandDefaultTheme, brandName, brandSlug, nativeHostName } from '
 import { parseTheme } from './theme';
 
 describe('runtime brand', () => {
-  it('exposes the Detour brand in the default unit-test build', () => {
-    expect(brandName).toBe('Detour');
-    expect(brandSlug).toBe('detour');
+  it('exposes the Overwire brand in the default unit-test build', () => {
+    expect(brandName).toBe('Overwire');
+    expect(brandSlug).toBe('overwire');
     expect(brandDefaultTheme).toBe('dark');
-    expect(brand.shortName).toBe('Detour');
-    expect(nativeHostName).toBe('com.detour.db');
+    expect(brand.shortName).toBe('Overwire');
+    expect(nativeHostName).toBe('com.overwire.db');
   });
 
   it('uses the brand defaultTheme when no preference is stored', () => {

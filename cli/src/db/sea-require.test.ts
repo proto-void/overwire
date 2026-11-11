@@ -9,9 +9,9 @@ describe('sea-require', () => {
   it('resolves node_modules beside a fake execPath', () => {
     const dir = mkdtempSync(join(tmpdir(), 'detour-sea-req-'));
     try {
-      const fakeBin = join(dir, 'detour-db-host');
+      const fakeBin = join(dir, 'overwire-db-host');
       writeFileSync(fakeBin, '');
-      writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'detour-db-host', private: true }));
+      writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'overwire-db-host', private: true }));
       const nm = join(dir, 'node_modules', 'fake-addon');
       mkdirSync(nm, { recursive: true });
       writeFileSync(join(nm, 'package.json'), JSON.stringify({ name: 'fake-addon', main: 'index.js' }));

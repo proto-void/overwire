@@ -35,8 +35,8 @@ describe('isBusyFsError', () => {
   it('locked replace message mentions stop helper', () => {
     // Document the user-facing contract used by copyReplaceBinary.
     const msg =
-      'Cannot replace C:\\Detour\\db-host\\detour-db-host.exe: file is locked (Access is denied.). ' +
-      'Stop the helper in Detour → Databases (or close Chrome so the native host exits), then retry.';
+      'Cannot replace C:\\Overwire\\db-host\\overwire-db-host.exe: file is locked (Access is denied.). ' +
+      'Stop the helper in Overwire → Databases (or close Chrome so the native host exits), then retry.';
     assert.match(msg, /stop the helper/i);
     assert.match(msg, /retry/i);
   });
@@ -71,9 +71,9 @@ describe('resolveNodePath / probes', () => {
 
 describe('hostLauncherFileName', () => {
   it('uses .cmd on Windows and bare name elsewhere', () => {
-    assert.equal(hostLauncherFileName('win32'), 'detour-db-host.cmd');
-    assert.equal(hostLauncherFileName('darwin'), 'detour-db-host');
-    assert.equal(hostLauncherFileName('linux'), 'detour-db-host');
+    assert.equal(hostLauncherFileName('win32'), 'overwire-db-host.cmd');
+    assert.equal(hostLauncherFileName('darwin'), 'overwire-db-host');
+    assert.equal(hostLauncherFileName('linux'), 'overwire-db-host');
   });
 });
 
@@ -94,7 +94,7 @@ describe('writeHostLauncher', () => {
   it('darwin/linux: bash launcher with absolute quoted NODE and ENTRY', () => {
     const dir = mkdtempSync(join(tmpdir(), 'detour-db-install-'));
     try {
-      const out = join(dir, 'detour-db-host');
+      const out = join(dir, 'overwire-db-host');
       const node = '/usr/local/bin/node';
       const entry = '/Users/hamzakhan/Resource Override/cli/src/cli.ts';
       writeHostLauncher(out, entry, { nodePath: node, platform: 'darwin' });
@@ -112,7 +112,7 @@ describe('writeHostLauncher', () => {
   it('linux: same bash shape (paths with spaces)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'detour-db-install-'));
     try {
-      const out = join(dir, 'detour-db-host');
+      const out = join(dir, 'overwire-db-host');
       writeHostLauncher(out, '/opt/detour cli/src/cli.ts', {
         nodePath: '/usr/bin/node',
         platform: 'linux',
@@ -129,7 +129,7 @@ describe('writeHostLauncher', () => {
   it('win32: .cmd launcher with set "NODE=…" and no bash shebang', () => {
     const dir = mkdtempSync(join(tmpdir(), 'detour-db-install-'));
     try {
-      const out = join(dir, 'detour-db-host.cmd');
+      const out = join(dir, 'overwire-db-host.cmd');
       const node = 'C:\\Program Files\\nodejs\\node.exe';
       const entry = 'C:\\Users\\Hamza\\Resource Override\\cli\\src\\cli.ts';
       writeHostLauncher(out, entry, { nodePath: node, platform: 'win32' });
@@ -151,7 +151,7 @@ describe('writeHostLauncher', () => {
   it('accepts legacy string third-arg as nodePath (defaults to host platform)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'detour-db-install-'));
     try {
-      const out = join(dir, 'detour-db-host');
+      const out = join(dir, 'overwire-db-host');
       writeHostLauncher(out, '/tmp/entry.ts', '/opt/custom/bin/node');
       const body = readFileSync(out, 'utf8');
       assert.match(body, /NODE="\/opt\/custom\/bin\/node"/);
@@ -169,7 +169,9 @@ describe('windowsNativeMessagingRegKeys', () => {
     assert.ok(keys.some((k) => k.includes('BraveSoftware')));
     assert.ok(keys.some((k) => k.includes('Chromium')));
     assert.ok(keys.some((k) => k.includes('Mozilla')));
-    assert.ok(keys.every((k) => k.startsWith('HKCU\\') && k.endsWith('com.detour.db')));
+    assert.ok(keys.every((k) => k.startsWith('HKCU\\') && (k.endsWith('com.overwire.db') || k.endsWith('com.detour.db'))));
+    assert.ok(keys.some((k) => k.endsWith('com.overwire.db')));
+    assert.ok(keys.some((k) => k.endsWith('com.detour.db')));
   });
 
   it('splits Chromium keys from Firefox (different JSON shapes)', () => {
@@ -177,7 +179,10 @@ describe('windowsNativeMessagingRegKeys', () => {
     const firefox = windowsFirefoxNativeMessagingRegKey();
     assert.ok(chromium.every((k) => !k.includes('Mozilla')));
     assert.match(firefox, /Mozilla/);
-    assert.deepEqual([...chromium, firefox], windowsNativeMessagingRegKeys());
+    // Dual-register Overwire + legacy Detour host names.
+    assert.equal(windowsNativeMessagingRegKeys().length, 10);
+    assert.ok(windowsNativeMessagingRegKeys().includes(firefox));
+    assert.ok(chromium.every((k) => windowsNativeMessagingRegKeys().includes(k)));
   });
 });
 
@@ -186,6 +191,7 @@ describe('native messaging manifest dirs (all platforms)', () => {
     const chrome = chromeManifestDirs('darwin');
     const ff = firefoxManifestDir('darwin');
     assert.ok(chrome.some((p) => p.includes(join('Google', 'Chrome', 'NativeMessagingHosts'))));
+    assert.ok(chrome.some((p) => p.includes(join('Google', 'Chrome for Testing', 'NativeMessagingHosts'))));
     assert.ok(chrome.some((p) => p.includes(join('Microsoft Edge', 'NativeMessagingHosts'))));
     assert.ok(chrome.some((p) => p.includes(join('BraveSoftware', 'Brave-Browser', 'NativeMessagingHosts'))));
     assert.ok(ff.endsWith(join('Mozilla', 'NativeMessagingHosts')));
@@ -202,12 +208,12 @@ describe('native messaging manifest dirs (all platforms)', () => {
     assert.ok(ff.endsWith(join('.mozilla', 'native-messaging-hosts')));
   });
 
-  it('win32: LOCALAPPDATA Detour + APPDATA Mozilla (not hardcoded C:\\\\Users)', () => {
+  it('win32: LOCALAPPDATA Overwire + APPDATA Mozilla (not hardcoded C:\\\\Users)', () => {
     const chrome = chromeManifestDirs('win32');
     const ff = firefoxManifestDir('win32');
     assert.equal(chrome.length, 1);
     assert.ok(chrome[0]!.startsWith(windowsLocalAppData()));
-    assert.ok(chrome[0]!.endsWith(join('Detour', 'NativeMessagingHosts')));
+    assert.ok(chrome[0]!.endsWith(join('Overwire', 'NativeMessagingHosts')));
     assert.ok(ff.startsWith(windowsRoamingAppData()));
     assert.ok(ff.endsWith(join('Mozilla', 'NativeMessagingHosts')));
     assert.doesNotMatch(chrome[0]!, /^C:\\Users\\/i);

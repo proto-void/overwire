@@ -1,26 +1,31 @@
 # Product strategy (locked)
 
-**Last verified:** 2026-10-09
+**Last verified:** 2026-11-10
 
 ## Product
 
-**Detour** — free, MIT, open-source resource override for modern browsers. Help developers **point production at their local (or mock) code** without a proxy appliance or paid SaaS.
+**Overwire** (formerly Detour) — free, MIT, open-source resource override and local developer workbench for modern browsers. Help developers **point production at their local (or mock) code** without a proxy appliance or paid SaaS — plus API Tester and Databases in the same extension.
 
 ## Brand
 
-- **Name:** Detour
+- **Name:** Overwire (full: Overwire Workbench)
+- **Former name:** Detour (legacy build slug via `BRAND=detour`; storage schema unchanged)
+- **Mark:** Concept A Bypass Arc (LOCKED 2026-11-09) — see ADR-031
 - **Tagline:** “Point production at your code.”
 - **License:** MIT
-- **Business model:** Free forever for core; **$0** recurring ops (no Detour backend)
+- **Domain:** `https://overwire.protovoid.com` (canonical); legacy `detour.protovoid.com` is dual-host 200 on Worker `detour-web` today — 301 only after clean DNS cutover
+- **GitHub:** `proto-void/overwire` (web: `proto-void/overwire-web`; old `detour` / `detour-web` names redirect)
+- **Business model:** Free forever for **core**; optional Pro/Team via offline Ed25519 license keys (ADR-032) — **$0** recurring app-ops (no Overwire-hosted user database)
+- **Build brands:** default `extension/brands/overwire/` (ADR-031 cutover 2026-11-10); legacy `BRAND=detour` / `DETOUR_BRAND=detour`. Do not revive Rogers.
 
 ## Developer workbench: API Tester + Databases
 
-Beyond rule engines, Detour ships in-extension developer tools that stay free, MIT, and account-free:
+Beyond rule engines, Overwire ships in-extension developer tools that stay free, MIT, and account-free for core:
 
-- **API Tester** — send HTTP / WebSocket / SSE from the options page; collections/folders; OAuth/SigV4/Digest; see which Detour rules apply ([api-client](specs/api-client.md) A–C Done).
+- **API Tester** — send HTTP / WebSocket / SSE from the options page; collections/folders; OAuth/SigV4/Digest; see which rules apply ([api-client](specs/api-client.md) A–C Done).
 - **Databases** — connect to local or production databases via a self-managing native-messaging helper; query collections; production safety rails ([db-client](specs/db-client.md) Approved; Slices A–D shipped).
 
-These widen the product past “point production at your code” into a local workbench. They must not introduce a Detour backend, paid SaaS, or accounts.
+These widen the product past “point production at your code” into a local workbench. They must not introduce an Overwire backend, paid SaaS for core, or accounts.
 
 ## Architecture (tiered engines)
 
@@ -44,7 +49,7 @@ Rules → RuleCompiler → Core DNR | Inject scripting | Mock fetch/XHR
 - **Recipes** — shareable starter rule packs (Vite, SPA fallback, CORS headers, etc.)
 - **Rule tester** — paste a URL; show which rule wins (RO todo.txt wish)
 - **RO import** — import Resource Override export formats where feasible
-- **Dark default** UI
+- **Dark default** UI (Overwire tokens: neon orange accent + green applied)
 
 ## Stack (planned)
 
@@ -55,15 +60,17 @@ WXT + TypeScript + Svelte 5 + CodeMirror 6 + valibot; Node CLI for Local Bridge.
 - Chrome Web Store / Edge / Firefox AMO / optional Safari later
 - GitHub releases for unpacked / CLI
 - No account required
+- CWS continuity: same Chromium extension ids as Detour for in-place upgrade (ADR-031)
 
 ## Hard nos
 
-- No Detour-hosted backend or mandatory cloud sync
+- No Overwire-hosted backend or mandatory cloud sync for core
 - No paid SaaS dependency for core features
 - No shipping user rule bodies / file contents as telemetry
 - Do not market around gambling, adult, crypto, or politics
 - No `extension/` or `cli/` implementation until module specs are **Approved**
+- No license feature gates until `licensing` spec is **Approved** (ADR-032)
 
 ## V1 intent (high level)
 
-See [specs/000-capability-map.md](specs/000-capability-map.md). Exact acceptance criteria live in Draft specs under `AI/specs/`.
+See [specs/000-capability-map.md](specs/000-capability-map.md). Exact acceptance criteria live in specs under `AI/specs/`. Rebrand / monetization / DB perf checklist: [plans/041-overwire-rebrand-monetization-perf.md](plans/041-overwire-rebrand-monetization-perf.md).
