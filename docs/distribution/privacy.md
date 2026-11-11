@@ -2,7 +2,7 @@
 
 **Detour** (“Point production at your code.”)  
 **Effective:** 2026-10-23  
-**Product site:** [https://overwire.protovoid.com](https://overwire.protovoid.com) (legacy host [detour.protovoid.com](https://detour.protovoid.com) also live dual-host 200; 301 cutover deferred)  
+**Product site:** [https://overwire.protovoid.com](https://overwire.protovoid.com) (legacy `detour.protovoid.com` taken down 2026-11-11 — NXDOMAIN, no 301)  
 **Canonical policy URL:** [https://overwire.protovoid.com/privacy/](https://overwire.protovoid.com/privacy/)
 
 Detour is a browser extension that runs on your device. It is free, MIT-licensed software. The project does not operate an account system or a server for the extension.

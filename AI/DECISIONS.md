@@ -937,7 +937,7 @@ Detour needed a clearer product identity for the full workbench (rules + API Tes
 ### Consequences
 
 - Product facts in `PRODUCT.md` / glossary / conventions point at Overwire only; Detour is historical + runtime migration shims
-- Web/support assets use Bypass Arc; dual-host `detour-web` Worker may remain until Hamza deploys 301
+- Web/support assets use Bypass Arc; Worker script name may stay `detour-web` until a later rename; `detour.protovoid.com` taken down 2026-11-11 with **no** 301 (canonical `overwire.protovoid.com` only)
 - Plan [041](plans/041-overwire-rebrand-monetization-perf.md)
 
 ---

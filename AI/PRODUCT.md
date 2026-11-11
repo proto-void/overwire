@@ -13,7 +13,7 @@
 - **Mark:** Concept A Bypass Arc (LOCKED 2026-11-09) — see ADR-031
 - **Tagline:** “Point production at your code.”
 - **License:** MIT
-- **Domain:** `https://overwire.protovoid.com` (canonical); legacy `detour.protovoid.com` is dual-host 200 on Worker `detour-web` today — 301 only after clean DNS cutover
+- **Domain:** `https://overwire.protovoid.com` (canonical). Legacy `detour.protovoid.com` taken down 2026-11-11 (detached from Worker `detour-web`, DNS NXDOMAIN, **no** 301/302)
 - **GitHub:** `proto-void/overwire` (web: `proto-void/overwire-web`; old `detour` / `detour-web` names redirect)
 - **Business model:** Free forever for **core**; optional Pro/Team via offline Ed25519 license keys (ADR-032) — **$0** recurring app-ops (no Overwire-hosted user database)
 - **Build brand:** sole in-tree pack `extension/brands/overwire/`. `BRAND=detour` rejected. Runtime legacy fallbacks (`com.detour.db`, `detour:resync`, `detour-*` scripts, Detour export import) stay for zero data-loss. Do not revive Rogers.

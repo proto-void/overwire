@@ -4,6 +4,8 @@
 
 ## Done
 
+- [x] **`detour.protovoid.com` taken down, no 301 (2026-11-11):** Cloudflare: detached Worker custom domain from **`detour-web`** (kept `overwire.protovoid.com` + Worker intact); managed zone DNS for detour removed with detach. Auth/`8.8.8.8` dig **NXDOMAIN**; overwire still **HTTP/2 200** Overwire. Did **not** deploy `detour-to-overwire-redirect`. Docs: `overwire-web/docs/DEPLOY.md`, SEO, redirect README; `wrangler.jsonc` routes overwire-only. No Stripe/CWS/extension brand edits in this stream.
+
 - [x] **Live Detour product naming sweep (2026-11-11):** Follow-up after flavor removal. User-facing UI/docs now say Overwire/`brandName` (Databases helper install, API Tester, DevTools panel, Body/Bridge/Rule copy, sync/devtools errors, distribution README/github-push/bump-version). Left alone: rebrand banner, legacy storage/NM/script/export shims, `__detour_mock_*` events, golden Detour fixtures. Tests 642 + typecheck green; zip rebuilt.
 
 - [x] **Detour brand flavor removed + git sync (2026-11-11):** Hamza Go on what's-next + CWS live as Overwire. Merged PR https://github.com/proto-void/overwire/pull/2 → `origin/main` (`b52d8b7`). Deleted `extension/brands/detour/`; sole pack `brands/overwire/` + shared `brands/types.ts`. `BRAND=detour` rejected at build/pack. AGENTS/CI/README Overwire-only zip DoD. Kept upgrade shims: Chromium ids/key, storage keys, `com.detour.db` dual-register, `detour:resync` / `detour-*` / `detour-sri`, Detour export import, one-release `detour` CLI bin shim, `DETOUR_*` env aliases. Unit tests 642 + CLI 126 + typecheck green. Zip: `extension/.output/overwire/overwire-0.1.3-chrome.zip` (no `key`). No CWS re-upload, no 301 Worker, no Stripe live. overwire-web marketing polish committed separately if dirty.
@@ -202,7 +204,7 @@
 ## Next
 
 1. **CWS live as Overwire** (`jfgbokgdgpjhkciooicmbdgablgkklmn`). Do not re-upload unless a new version needs store review after Detour removal (optional; local zip ready). Optional YouTube promo URL still deferred.
-2. **301 Worker** — DNS clean; deploy only when Hamza explicitly cuts over from dual-host `detour-web`.
+2. ~~**301 Worker / dual-host**~~ — **superseded 2026-11-11:** `detour.protovoid.com` taken down with **no** redirect; do not deploy `detour-to-overwire-redirect`.
 3. **Stripe live Payment Links** — tax registrations → live-mode catalog → wire `site.config.ts` `paymentLinks` (sandbox IDs must not go production) + bake `LICENSE_VERIFY_PUBLIC_KEY`.
 4. **Drop one-release shims later** — `detour` CLI bin + `DETOUR_*` env aliases (keep runtime storage/NM/id fallbacks forever for upgrades).
 5. **Plan 032 smoke (Windows Cassandra)** — windows OS pack + VPN; skipped in A4.

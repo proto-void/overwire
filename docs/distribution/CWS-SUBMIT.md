@@ -21,8 +21,8 @@ Listing is already live (historically as **Detour**). This packet is the **Overw
 | **Size**               | ~497 KB (`508690` bytes; rebuilt after default-brand cutover)                                              |
 | **manifest.name**      | `Overwire` (CWS Package “Title/Summary from package” uses this — not the longer Store listing Title paste) |
 | **Store icon 128×128** | Inside zip at `icons/128.png` (also `extension/.output/overwire/chrome-mv3/icons/128.png`, or flattened `docs/distribution/store-assets/store-icon-128.png`) — Bypass Arc   |
-| **Privacy policy**     | [https://overwire.protovoid.com/privacy/](https://overwire.protovoid.com/privacy/) — live on dual-host (legacy [detour…](https://detour.protovoid.com/privacy/) also 200; no live 301) |
-| **Homepage**           | [https://overwire.protovoid.com/](https://overwire.protovoid.com/) (legacy [detour…](https://detour.protovoid.com/) also 200; dual-host, no live 301) |
+| **Privacy policy**     | [https://overwire.protovoid.com/privacy/](https://overwire.protovoid.com/privacy/) |
+| **Homepage**           | [https://overwire.protovoid.com/](https://overwire.protovoid.com/) (`detour.protovoid.com` taken down 2026-11-11 — no 301) |
 | **Support URL**        | [https://overwire.protovoid.com/support/](https://overwire.protovoid.com/support/) (Help & Community; see [support.md](support.md)) |
 | **Source**             | [https://github.com/proto-void/overwire](https://github.com/proto-void/overwire) (GitHub redirects from former `proto-void/detour`) |
 
@@ -352,7 +352,7 @@ Listing is live. Repo/site store-id work:
 2. **Done:** Public README Install section + Chrome Web Store badge point at the live URL (product name Overwire in docs).
 3. **Done:** Store id on `extension/brands/overwire` brand config and CLI store id lists so NM `allowed_origins` pick it up on helper install.
 4. **Manual / optional:** Protovoid `/products/` Overwire CTA already points at product/GitHub; keep CWS link if install-from-store is desired.
-5. **Manual / optional:** Google Search Console for `overwire.protovoid.com` → submit `sitemap-index.xml` (legacy property may still be `detour.protovoid.com` during dual-host; **DNS gate clean**; **301 still human-deferred**).
+5. **Manual / optional:** Google Search Console for `overwire.protovoid.com` → submit `sitemap-index.xml` (`detour.protovoid.com` taken down without 301; drop any legacy detour property when convenient).
 6. **Done (Submit):** Listing paste + 0.1.3 package upload + Submit for review (Hamza, 2026-11-10). Keep this packet for rejection replies / future bumps.
 
 ---

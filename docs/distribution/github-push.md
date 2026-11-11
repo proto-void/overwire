@@ -29,7 +29,7 @@ Privacy / homepage for the store listing:
 
 - https://overwire.protovoid.com/privacy/
 - https://overwire.protovoid.com
-  (legacy `detour.protovoid.com` remains dual-host until Hamza deploys the 301 Worker)
+  (legacy `detour.protovoid.com` taken down 2026-11-11 — NXDOMAIN, no 301)
 
 ## Product site → `proto-void/overwire-web`
 

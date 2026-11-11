@@ -100,7 +100,7 @@ Core MIT features stay free forever, local-only, account-free. Paid tiers via of
 
 ## Website / SEO / CWS (partially sibling)
 
-- [ ] Domain + Worker 301 `detour.protovoid.com` → `overwire.protovoid.com` — **DNS gate clean** (re-probed 2026-11-10: dig A/AAAA + curl HTTP/2 200 both hosts). **Still human-deferred** (premature Worker was deleted earlier; dual-host `detour-web` kept). Deploy only on explicit Hamza cutover ask.
+- [x] Domain hostname take-down `detour.protovoid.com` (2026-11-11) — Hamza chose **no 301**. Detached from `detour-web`; DNS NXDOMAIN; canonical `overwire.protovoid.com` only. Redirect Worker template stays undeployed.
 - [x] `site.config` / SEO / brand assets (foundation + Wave 2)
 - [x] `/support/` content
 - [x] protovoid.com product card → Overwire
