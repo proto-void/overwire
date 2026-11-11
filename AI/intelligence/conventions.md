@@ -1,6 +1,6 @@
 # Conventions
 
-**Last verified:** 2026-11-10 (default BRAND=overwire cutover; content-script ids; ADR-031)
+**Last verified:** 2026-11-11 (Detour brand flavor removed; Overwire-only zip DoD; ADR-031)
 
 ## Docs / KB
 
@@ -26,7 +26,7 @@ Nested `<details>` at most two levels. Planned-only features go under a single *
 
 ## Naming
 
-- Product: **Overwire** (formerly Detour; ADR-031). Default build slug `overwire`; legacy `BRAND=detour` / `brands/detour/`
+- Product: **Overwire** (formerly Detour; ADR-031). Sole in-tree build slug `overwire` (`brands/overwire/`); `BRAND=detour` rejected
 - Mark: Concept A Bypass Arc only (do not ship Concept B/C)
 - Spec files: `kebab-case.md`
 - Plans: `NNN-kebab-case.md`
@@ -43,7 +43,7 @@ Nested `<details>` at most two levels. Planned-only features go under a single *
 - Windows paths use `%LOCALAPPDATA%` / `%APPDATA%`; Linux respects `XDG_CONFIG_HOME` / `XDG_DATA_HOME`
 - Pack README templates live under `cli/pack/templates/` (single source with root README / in-pack guides)
 - Native messaging from the extension: `connectNativePort` (`chrome.runtime.connectNative` first) — never assume WXT `browser.runtime.connectNative` exists on Chromium; RPC client falls back to `com.detour.db` if Overwire host disconnects
-- Brand host: `nativeHostName` in `brands/*/brand.ts` (`com.overwire.db` for overwire; detour brand keeps `com.detour.db`); build may use `BRAND_DIR` / `DETOUR_BRAND_DIR`
+- Brand host: `nativeHostName` in `brands/overwire/brand.ts` (`com.overwire.db`); install dual-registers legacy `com.detour.db`; build may use `BRAND_DIR` / `DETOUR_BRAND_DIR` for external packs only
 - Contract tests against a foreign host binary: `BRAND_DB_HOST_CMD` or `DETOUR_DB_HOST_CMD`
 
 ## Code

@@ -3,16 +3,17 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'wxt';
-import type { BrandConfig } from './brands/detour/brand';
-import { DEFAULT_NATIVE_HOST_NAME } from './brands/detour/brand';
+import type { BrandConfig } from './brands/types';
+import { DEFAULT_NATIVE_HOST_NAME } from './brands/types';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 /**
  * Brand directory: `BRAND_DIR` / `DETOUR_BRAND_DIR` (absolute path) wins;
- * else `brands/<BRAND|DETOUR_BRAND>` (default `overwire` after CWS rebrand cutover).
+ * else in-tree `brands/overwire` only (Detour flavor removed after CWS live).
  * External dirs let private partner repos build without copying assets into this tree (ADR-030).
+ * `DETOUR_*` env aliases still accepted for one release.
  */
 function resolveBrandDir(): { dir: string; slug: string } {
   const external = (process.env.BRAND_DIR || process.env.DETOUR_BRAND_DIR || '').trim();
@@ -27,11 +28,17 @@ function resolveBrandDir(): { dir: string; slug: string } {
     const slug = slugEnv || path.basename(dir) || 'overwire';
     return { dir, slug };
   }
-  const slug = (process.env.BRAND || process.env.DETOUR_BRAND || 'overwire').trim() || 'overwire';
+  const slugRaw = (process.env.BRAND || process.env.DETOUR_BRAND || 'overwire').trim() || 'overwire';
+  if (slugRaw === 'detour') {
+    throw new Error(
+      'Detour brand flavor was removed (Overwire is live on CWS). Use default overwire, or BRAND_DIR for an external pack.',
+    );
+  }
+  const slug = slugRaw;
   const dir = path.join(root, 'brands', slug);
   if (!existsSync(path.join(dir, 'brand.ts'))) {
     throw new Error(
-      `Unknown BRAND/DETOUR_BRAND="${slug}". Expected ${path.relative(root, path.join(dir, 'brand.ts'))} (see brands/_template/), or set BRAND_DIR.`,
+      `Unknown BRAND="${slug}". Expected ${path.relative(root, path.join(dir, 'brand.ts'))} (sole in-tree brand: overwire), or set BRAND_DIR.`,
     );
   }
   return { dir, slug };
@@ -141,7 +148,7 @@ export default defineConfig({
           ],
           browser_specific_settings: {
             gecko: {
-              // Brand slug drives AMO id (plan 041 cutover → overwire@; BRAND=detour keeps legacy).
+              // AMO id for Overwire (legacy detour@protovoid.com only via external BRAND_DIR packs).
               id: brand.slug === 'detour' ? 'detour@protovoid.com' : 'overwire@protovoid.com',
               strict_min_version: '128.0',
               data_collection_permissions: { required: ['none'] },
@@ -153,7 +160,7 @@ export default defineConfig({
           optional_permissions: ['nativeMessaging', 'notifications', 'cookies', 'identity'],
         }),
   }),
-  // Popup HTML <title> becomes action.default_title and would pin "Detour" for every brand.
+  // Popup HTML <title> becomes action.default_title — re-apply brand.name after WXT merge.
   hooks: {
     'build:manifestGenerated': (_wxt, manifest) => {
       manifest.action ??= {};

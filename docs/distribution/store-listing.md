@@ -74,7 +74,7 @@ Use the **same Chromium zip** as Chrome (`overwire-<version>-chrome.zip`). Submi
 
 1. `BRAND=overwire corepack pnpm --filter @overwire/extension zip:firefox` (from repo root, or `cd extension && …`).
 2. Upload `overwire-<version>-firefox.zip` and the sources zip at [addons.mozilla.org](https://addons.mozilla.org/developers/).
-3. Default brand packs gecko id `overwire@protovoid.com` (`BRAND=detour` keeps `detour@protovoid.com`). Confirm the packaged id in the zip. Minimum Firefox is 128.
+3. Overwire packs gecko id `overwire@protovoid.com`. Confirm the packaged id in the zip. Minimum Firefox is 128. Helper install also allows legacy `detour@protovoid.com` for upgrade continuity.
 4. Data collection: none (`data_collection_permissions.required` is `none`).
 5. Use the same listing title and the privacy policy URL.
 

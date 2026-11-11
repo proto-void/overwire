@@ -875,22 +875,22 @@ Agents: start at **[AI/README.md](AI/README.md)** (also linked from [AGENTS.md](
 
 ```sh
 corepack pnpm install
-corepack pnpm --filter @detour/cli test
-corepack pnpm --filter @detour/extension test
-corepack pnpm --filter @detour/extension typecheck
-corepack pnpm --filter @detour/extension build
-corepack pnpm --filter @detour/extension build:firefox
+corepack pnpm --filter @overwire/cli test
+corepack pnpm --filter @overwire/extension test
+corepack pnpm --filter @overwire/extension typecheck
+corepack pnpm --filter @overwire/extension build
+corepack pnpm --filter @overwire/extension build:firefox
 cd extension && CHROME=$(node scripts/install-chrome.mjs) corepack pnpm e2e:chrome
 ```
 
-**Detour zip DoD** (when `extension/` changes):
+**Overwire zip DoD** (when `extension/` changes):
 
 ```sh
-corepack pnpm --filter @detour/extension zip
-# → extension/.output/detour/detour-<version>-chrome.zip
+corepack pnpm --filter @overwire/extension zip
+# → extension/.output/overwire/overwire-<version>-chrome.zip
 ```
 
-Brand flavors use build-time `BRAND` / `DETOUR_BRAND` (default `overwire`; legacy `BRAND=detour`). Partner Rogers product retired (plan 033 / ADR-026 note).
+Sole in-tree brand is Overwire (`extension/brands/overwire/`). Detour flavor removed after CWS live; `BRAND=detour` is rejected. Partner Rogers product retired (plan 033 / ADR-026 note).
 
 Distribution, CI, and store listing: [docs/distribution/README.md](docs/distribution/README.md). Bridge CLI: [cli/README.md](cli/README.md).
 

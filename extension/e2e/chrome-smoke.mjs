@@ -13,13 +13,12 @@ import puppeteer from 'puppeteer-core';
 
 const EXT_CANDIDATES = [
   path.resolve(import.meta.dirname, '../.output/overwire/chrome-mv3'),
-  path.resolve(import.meta.dirname, '../.output/detour/chrome-mv3'),
 ];
 const EXT = EXT_CANDIDATES.find((p) => fs.existsSync(path.join(p, 'manifest.json')));
 const CHROME = process.env.CHROME;
 if (!EXT) {
   console.error(
-    'No unpacked Chrome MV3 build found. Run `pnpm --filter @overwire/extension build` first (default brand overwire, or BRAND=detour).',
+    'No unpacked Chrome MV3 build found. Run `pnpm --filter @overwire/extension build` first (Overwire brand).',
   );
   process.exit(2);
 }

@@ -34,8 +34,15 @@ const require = createRequire(import.meta.url);
 const cliRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = join(cliRoot, '..');
 
-const brand = (process.env.BRAND || process.env.DETOUR_BRAND || 'overwire').trim() || 'overwire';
-const brandName = brand === 'overwire' ? 'Overwire' : brand === 'detour' ? 'Detour' : brand;
+const brandRaw = (process.env.BRAND || process.env.DETOUR_BRAND || 'overwire').trim() || 'overwire';
+if (brandRaw === 'detour') {
+  console.error(
+    'Detour brand flavor was removed. Pack with default overwire (or BRAND_EXT_DIR for a custom chrome-mv3).',
+  );
+  process.exit(1);
+}
+const brand = brandRaw;
+const brandName = brand === 'overwire' ? 'Overwire' : brand;
 const packProduct = 'overwire';
 const version = readExtVersion();
 const osKey = process.env.BRAND_PACK_OS || process.env.DETOUR_PACK_OS || mapOs(platform());

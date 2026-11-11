@@ -1,6 +1,6 @@
 /**
- * Neutral BRAND_* env vars with DETOUR_* fallbacks during the Overwire transition (plan 041).
- * Default brand slug is `overwire` after CWS rebrand cutover (2026-11-10).
+ * Neutral BRAND_* env vars with DETOUR_* fallbacks (one-release aliases after Detour flavor removal).
+ * Sole in-tree brand slug is `overwire`.
  */
 
 export function envBrandSlug(fallback = 'overwire'): string {

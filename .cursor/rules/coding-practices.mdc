@@ -1,5 +1,5 @@
 ---
-description: Short coding invariants for Detour
+description: Short coding invariants for Overwire
 alwaysApply: true
 ---
 
@@ -8,7 +8,7 @@ alwaysApply: true
 - Free, MIT, open source; **no backend**; **$0** recurring cloud ops.
 - Spec-driven: implement only from **Approved** specs in `AI/specs/`; Draft specs are for human review.
 - Prefer `urlFilter` over `regexFilter` for DNR; respect the 1000 dynamic regex ceiling.
-- Packages: root `overwire`, `@overwire/extension`, `@overwire/cli`. Prefer `BRAND_*` env; `DETOUR_*` still works. Default brand slug is `overwire` (use `BRAND=detour` for legacy flavor).
+- Packages: root `overwire`, `@overwire/extension`, `@overwire/cli`. Prefer `BRAND_*` env; `DETOUR_*` aliases still work for one release. Sole brand slug is `overwire` (`BRAND=detour` rejected).
 - Match existing patterns; no drive-by refactors or unrelated files.
 - Prefer small, verified increments; update `AI/intelligence/` and `AI/PROGRESS.md` when behavior or architecture changes.
 - No secrets in repo, commits, or knowledge-base files.

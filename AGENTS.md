@@ -10,15 +10,17 @@ Before any non-trivial work:
 
 Product facts in `AI/` win over vendor skill defaults. No secrets in the knowledge base. No `extension/` or `cli/` code until specs are Approved.
 
-## Extension delivery (dual brand zip DoD)
+## Extension delivery (Overwire zip DoD)
 
-Build-time brand env: prefer `BRAND` / `BRAND_DIR` / `BRAND_NAME` / `BRAND_OMIT_CHROMIUM_MANIFEST_KEY`; `DETOUR_*` equivalents still work. **Default brand is `overwire`** (cutover 2026-11-10 after CWS rebrand submit).
+Sole in-tree product brand is **Overwire** (`extension/brands/overwire/`). Build-time env: `BRAND` / `BRAND_DIR` / `BRAND_NAME` / `BRAND_OMIT_CHROMIUM_MANIFEST_KEY` (`DETOUR_*` aliases still accepted for one release). `BRAND=detour` is rejected — Detour flavor removed after CWS live.
 
-Every extension delivery that changes `extension/` ends with a zip for the brand under test:
+Every extension delivery that changes `extension/` ends with:
 
-- **Default (Overwire):** `corepack pnpm --filter @overwire/extension zip` → `extension/.output/overwire/overwire-<version>-chrome.zip`
-- **Detour flavor (legacy):** `BRAND=detour` (or `DETOUR_BRAND=detour`) `corepack pnpm --filter @overwire/extension zip` → `extension/.output/detour/detour-<version>-chrome.zip`
+```sh
+corepack pnpm --filter @overwire/extension zip
+# → extension/.output/overwire/overwire-<version>-chrome.zip
+```
 
-Report the zip path(s) in the delivery summary. Packages are `@overwire/extension` + `@overwire/cli` (root name `overwire`). Native host: `com.overwire.db` with automatic fallback / dual-register of `com.detour.db`. Partner Rogers product retired (plan 033); do not revive `zip:rogers` or a private `rogers-detour` tree.
+Report the zip path in the delivery summary. Packages are `@overwire/extension` + `@overwire/cli` (root name `overwire`). Native host: `com.overwire.db` with automatic fallback / dual-register of `com.detour.db` (upgrade continuity — not a Detour brand build). Partner Rogers product retired (plan 033); do not revive `zip:rogers` or a private `rogers-detour` tree.
 
-Subagent prompts that change `extension/` must include this dual-brand zip DoD.
+Subagent prompts that change `extension/` must include this Overwire-only zip DoD.

@@ -1,6 +1,6 @@
 # Gotchas
 
-**Last verified:** 2026-11-10 (A4 helper NM argv + CfT path; content-script id migration; licensing e-core; SEA/OS pack)
+**Last verified:** 2026-11-11 (Detour brand flavor removed; Overwire-only zip DoD)
 
 ## DNR limits (verified against Chrome + MDN reference, 2026-10-06)
 
@@ -231,12 +231,12 @@
 - Native messaging host→browser messages are capped at **1 MB**. Result sets must chunk (~900 KB) and page (Cassandra `pageState`, SQL OFFSET/FETCH)
 - Browser stores cannot install native hosts — one-time OS-pack **Install Overwire Helper** or `overwire db install` (`detour` bin is a one-release shim); day-to-day start/stop is `connectNative` / port close (ADR-027/029)
 - `hello` **first:** host returns `{ protocolVersion, hostVersion, capabilities[] }`. Extension shows Helper too old/new on protocol mismatch; engines and SSH/proxy sections are gated from `capabilities` (`engine:<id>`, `ssh`, `proxy`, …)
-- **Brand host name:** `nativeHostName` — Overwire brand `com.overwire.db`; detour brand keeps `com.detour.db`. Install dual-registers both; keychain reads fall back to `com.detour.db`; RPC client falls back if Overwire host disconnects (ADR-030/031)
-- `BRAND_DIR` / `DETOUR_BRAND_DIR`**:** absolute external brand tree for private builds; in-tree `brands/<slug>` still works. Do not commit closed partner helper source into the public MIT repo
+- **Brand host name:** `nativeHostName` — Overwire `com.overwire.db`. Install dual-registers legacy `com.detour.db`; keychain reads fall back; RPC client falls back if Overwire host disconnects (ADR-030/031). No Detour brand pack.
+- `BRAND_DIR` / `DETOUR_BRAND_DIR`**:** absolute external brand tree for private builds; sole in-tree pack is `brands/overwire/`. `BRAND=detour` rejected. Do not commit closed partner helper source into the public MIT repo
 - **Portable contract:** `BRAND_DB_HOST_CMD` or `DETOUR_DB_HOST_CMD=/path/to/binary` runs the framing/`hello` suite against any conforming host
 - **Preferred path:** OS packs (`overwire-<ver>-<os>-<arch>`) ship a self-contained SEA; store zips stay extension-only. Gatekeeper / SmartScreen warnings are expected at $0 unsigned (no notarization)
-- **Stable Chromium id:** public manifest `key` per brand (Detour in-repo; Rogers gitignored). Installer `allowed_origins` = brand unpacked id (+ store ids when known) + optional `--extension-id`. Never commit private `.pem`
-- **CWS live (2026-10-21):** store id `jfgbokgdgpjhkciooicmbdgablgkklmn` (listing `https://chromewebstore.google.com/detail/detour/jfgbokgdgpjhkciooicmbdgablgkklmn`). Listed in `brands/detour` `chromiumExtensionIds` + `cli/src/db/extension-ids.ts` `DETOUR_STORE_CHROMIUM_IDS` alongside unpacked `hegphfgboahkhkpiglcccnkbdpddpemj`. Older docs wrongly used `…abigkklmn`. Public helper install (`detour db install` / public OS pack Install Helper) writes those ids into NM `allowed_origins` — re-run that path after appending a store id so the CWS extension can connect
+- **Stable Chromium id:** public manifest `key` in `brands/overwire` (same key/ids as former Detour for CWS continuity). Installer `allowed_origins` = unpacked id (+ store ids) + optional `--extension-id`. Never commit private `.pem`
+- **CWS live:** store id `jfgbokgdgpjhkciooicmbdgablgkklmn` (now Overwire listing). Listed in `brands/overwire` `chromiumExtensionIds` + `cli/src/db/extension-ids.ts` `OVERWIRE_STORE_CHROMIUM_IDS` (aliases `DETOUR_*` remain). Public helper install (`overwire db install` / OS pack Install Helper) writes those ids into NM `allowed_origins` — re-run that path after appending a store id so the CWS extension can connect
 - **SEA base binary:** Homebrew Node is a thin stub + `libnode.dylib` and cannot be postject-injected. `sea:build` downloads the official nodejs.org binary into `cli/.cache/node-official/` when `process.execPath` is too small / links `libnode`. CI `setup-node` already uses official builds. Detect fuse at inject time (`NODE_SEA_FUSE_…df1996b2` on Node 24+; older docs show `…df481702`)
 - **SEA natives:** `@napi-rs/keyring` (+ `keyring-<platform>`) must be real copies beside the binary (`createRequire(dirname(execPath)/package.json)`). Copy via pnpm store realpaths — do not zip pnpm symlinks
 - **Intel Mac CI:** use an Intel runner label (e.g. `macos-15-intel`); `macos-latest` is arm64 only

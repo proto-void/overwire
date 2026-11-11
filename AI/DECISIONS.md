@@ -1,6 +1,6 @@
 # Decisions (ADRs)
 
-**Last verified:** 2026-11-10 (ADR-031 Overwire; ADR-032 licensing; ADR-033 DB big-data)
+**Last verified:** 2026-11-11 (ADR-031 Detour flavor removed; ADR-032 licensing; ADR-033 DB big-data)
 
 ## ADR-001 — Stack: WXT + TypeScript + Svelte 5 + CodeMirror 6 + valibot; Node CLI
 
@@ -715,16 +715,14 @@ Internal partners (e.g. Rogers) needed a separately themed extension zip. The pu
 ### Decision
 
 - Brands live under `extension/brands/<slug>/` (`brand.ts`, `tokens.css`, `icon.svg`, optional `logo.svg` / `mark.svg` / `partner-logo.svg` / `fonts/`)
-- `DETOUR_BRAND` (default `detour`) selects the flavor in `wxt.config.ts`; missing brands fail the build clearly
+- `BRAND` / `BRAND_DIR` select the pack in `wxt.config.ts` (`DETOUR_*` aliases one release); missing brands fail the build clearly
 - Manifest name / short_name / description / action title, zip slug, outDir (`.output/<slug>`), icons (`@wxt-dev/auto-icons`), and CSS tokens (`virtual:brand-tokens`) come from the brand
-- **Display name is always Detour** for partner flavors. Partner identity is theme, tokens, icons, and optional partner logo — not a different product title. `DETOUR_BRAND_NAME` can still override when needed
-- Co-brand lockup: `Detour | [partner]` when `partner-logo.svg` is present
-- `import.meta.env.BRAND` exposes `{ name, shortName, slug, defaultTheme }` to the UI; user-facing copy uses `brandName`
-- **Committed:** `brands/detour/`, `brands/overwire/` (ADR-031), `brands/_template/`
+- **Committed (current):** `brands/overwire/`, `brands/_template/`, `brands/types.ts`. Detour flavor directory removed 2026-11-11 after CWS live as Overwire.
 - **Gitignored:** private partner brand trees under `brands/<slug>/` when needed
-- Scripts: `zip` / `build` default = Detour (`DETOUR_BRAND=detour`) until cutover; Overwire via `DETOUR_BRAND=overwire`
-- **Delivery DoD (current):** Detour zip by default; Overwire zip when `DETOUR_BRAND=overwire` (plan 041). No Rogers dual-zip
-- No change to rules, engine, or storage keys across flavors
+- Scripts: `zip` / `build` default = Overwire only; `BRAND=detour` rejected
+- **Delivery DoD (current):** Overwire zip only (plan 041). No Rogers dual-zip; no Detour flavor zip
+- No change to rules, engine, or storage keys for upgrade continuity (legacy host/id fallbacks remain)
+- Historical: partner display-name-as-Detour + dual Detour/Overwire packs superseded by ADR-031 + Detour flavor removal
 
 ### Note (2026-10-23) — Rogers product retired
 
@@ -928,18 +926,18 @@ Detour needed a clearer product identity for the full workbench (rules + API Tes
 
 - **Product name:** **Overwire** (full: Overwire Workbench). Tagline remains “Point production at your code.” for continuity; marketing copy may widen to override / mock / query workbench language.
 - **Official mark:** Concept A **Bypass Arc** only (horizontal wire + neon-orange override arc over dashed production segment + live green terminal). Rejected: Concept B Spliced Wire, Concept C Switch Gate.
-- **Brand pack:** `extension/brands/overwire/` (`brand.ts`, `tokens.css` dark + WCAG AA light, `icon.svg` / `mark.svg` / `logo.svg`). Default build brand (cutover 2026-11-10 after CWS rebrand submit); legacy via `BRAND=detour`.
-- **Default brand:** **`overwire`** (was `detour` until CWS listing paste + identifier follow-ups landed).
+- **Brand pack:** `extension/brands/overwire/` (`brand.ts`, `tokens.css` dark + WCAG AA light, `icon.svg` / `mark.svg` / `logo.svg`). Sole in-tree product brand (Detour flavor directory removed 2026-11-11 after CWS live as Overwire).
+- **Default brand:** **`overwire`** only. `BRAND=detour` is rejected at build/pack time.
 - **Chromium continuity:** Keep existing `chromiumManifestKey` and extension ids (unpacked + CWS `jfgbokgdgpjhkciooicmbdgablgkklmn`) so installs upgrade in place.
-- **Native host (target):** `com.overwire.db` with automatic read/connect fallback to `com.detour.db` during transition.
-- **Storage continuity:** Top-level storage keys (`workspace`, `apiCollections`, `dbConnections`, …) stay unchanged. Neutralize brand-prefixed *internal* identifiers (`applyDetourRules` → `applyRules`, alarm/userScript prefixes, export envelope names) with legacy read-fallbacks — separate implementation wave.
-- **Distribution targets:** Domain `https://overwire.protovoid.com`; GitHub `proto-void/overwire` + `proto-void/overwire-web` (renamed 2026-11-10; old names redirect); local folders `/Users/hamzakhan/overwire` + `…/overwire-web` (local `mv` still Hamza-only); workspace `overwire.code-workspace`. See `docs/ops/local-folder-rename.md`.
-- **Do not** revive Rogers / dual-zip DoD.
+- **Native host (target):** `com.overwire.db` with automatic read/connect fallback + dual-register of `com.detour.db` (upgrade continuity — not a Detour brand build).
+- **Storage continuity:** Top-level storage keys (`workspace`, `apiCollections`, `dbConnections`, …) stay unchanged. Neutralized brand-prefixed *internal* identifiers (`applyRules`, alarm/userScript prefixes, export envelope names) keep Detour legacy read-fallbacks.
+- **Distribution targets:** Domain `https://overwire.protovoid.com`; GitHub `proto-void/overwire` + `proto-void/overwire-web` (renamed 2026-11-10; old names redirect); local folders `/Users/hamzakhan/overwire` + `…/overwire-web`; workspace `overwire.code-workspace`. See `docs/ops/local-folder-rename.md`.
+- **Do not** revive Rogers / dual-zip DoD / Detour flavor zip.
 
 ### Consequences
 
-- Product facts in `PRODUCT.md` / glossary / conventions point at Overwire; Detour remains historical + opt-in `BRAND=detour` flavor
-- Web/support assets use Bypass Arc; sibling owns `/support/` page body
+- Product facts in `PRODUCT.md` / glossary / conventions point at Overwire only; Detour is historical + runtime migration shims
+- Web/support assets use Bypass Arc; dual-host `detour-web` Worker may remain until Hamza deploys 301
 - Plan [041](plans/041-overwire-rebrand-monetization-perf.md)
 
 ---

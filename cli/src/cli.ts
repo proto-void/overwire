@@ -155,10 +155,11 @@ function parseDbInstall(
     else if (arg === '--sea') sea = true;
     else if (arg.startsWith('--brand=')) {
       const b = arg.slice('--brand='.length);
+      // `detour` accepted as one-release alias (same Chromium ids); no Detour brand pack.
       if (b !== 'detour' && b !== 'overwire') {
-        return { error: `Unknown brand "${b}". Use detour or overwire.` };
+        return { error: `Unknown brand "${b}". Use overwire (detour is a transition alias).` };
       }
-      brand = b;
+      brand = b === 'detour' ? 'overwire' : b;
     } else if (arg === '--help' || arg === '-h') return { error: usage() };
     else return { error: `Unknown option "${arg}".\n${usage()}` };
   }
@@ -169,11 +170,11 @@ export function usage(): string {
   return [
     'Usage:',
     '  overwire bridge <folder> [--port 47321]',
-    '  overwire db install [--extension-id=<id>] [--no-firefox] [--dry-run] [--brand=detour|overwire]',
+    '  overwire db install [--extension-id=<id>] [--no-firefox] [--dry-run] [--brand=overwire]',
     '  overwire db uninstall',
     '  overwire db doctor',
     '  overwire-db-host install | uninstall | doctor | --version   (SEA pack helper)',
-    '  detour …   (transition alias → overwire)',
+    '  detour …   (one-release transition shim → overwire; prefer overwire)',
     '',
     'Local Bridge serves a folder on 127.0.0.1 for serve-local rules.',
     `db install registers ${HOST_NAME} (and legacy com.detour.db) for the Databases tab.`,

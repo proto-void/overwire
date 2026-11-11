@@ -50,7 +50,7 @@ describe('helperInstallDir', () => {
 });
 
 describe('allowed_origins / extension ids', () => {
-  it('defaults to Detour unpacked + store ids (same for overwire brand)', () => {
+  it('defaults to Overwire unpacked + store ids (Detour alias same ids)', () => {
     const expected = [DETOUR_UNPACKED_CHROMIUM_ID, ...DETOUR_STORE_CHROMIUM_IDS];
     assert.deepEqual(resolveChromiumExtensionIds({}), expected);
     assert.deepEqual(resolveChromiumExtensionIds({ brand: 'detour' }), expected);

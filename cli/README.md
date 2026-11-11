@@ -15,8 +15,8 @@ corepack pnpm --filter @overwire/cli exec node --experimental-strip-types src/cl
 corepack pnpm --filter @overwire/cli exec node --experimental-strip-types src/cli.ts db uninstall
 ```
 
-Bins: `overwire`, `overwire-db-host` (and transition alias `detour` for one release).  
-Native host: `com.overwire.db` (install also registers legacy `com.detour.db`).
+Bins: `overwire`, `overwire-db-host` (and one-release shim `detour` → prefer `overwire`).  
+Native host: `com.overwire.db` (install also registers legacy `com.detour.db`). No Detour brand pack.
 
 (`pnpm exec overwire` may not be linked if nothing depends on `@overwire/cli`. Use `node … src/cli.ts` or `node bin/overwire.js` instead.)
 

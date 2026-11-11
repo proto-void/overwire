@@ -1,11 +1,13 @@
 # Brand template
 
-Copy this folder to `brands/<slug>/` for a white-label build.
+Copy this folder for an external white-label build via `BRAND_DIR` (absolute path).
+Do **not** commit private partner brands into this public MIT repo. Do not revive Rogers.
+There is no in-tree Detour flavor — sole product brand is `brands/overwire/`.
 
 Required files:
 
 - `brand.ts` — export default `{ name, shortName, description, slug, defaultTheme }`
-- `tokens.css` — CSS variables for light/dark (see `brands/detour/tokens.css`)
+- `tokens.css` — CSS variables for light/dark (see `brands/overwire/tokens.css`)
 - `icon.svg` — toolbar / store icon source for `@wxt-dev/auto-icons`
 - `logo.svg` — header wordmark (optional but recommended)
 - `mark.svg` — compact mark tile (optional)
@@ -18,7 +20,7 @@ Optional:
 Build with:
 
 ```bash
-DETOUR_BRAND=<slug> corepack pnpm --filter @detour/extension zip
+BRAND_DIR=/absolute/path/to/brand corepack pnpm --filter @overwire/extension zip
 ```
 
-Public product brands committed in-tree: `brands/overwire/` (default; Concept A Bypass Arc) and `brands/detour/` (legacy via `BRAND=detour`). Private partner brands should stay **gitignored**. Do not revive Rogers. Partner identity (if any) lives in tokens/icons/`partner-logo.svg`, not a forked product title unless `DETOUR_BRAND_NAME` / `BRAND_NAME` is set.
+Partner identity (if any) lives in tokens/icons/`partner-logo.svg`, not a forked product title unless `BRAND_NAME` is set. `DETOUR_*` env aliases still work for one release.

@@ -212,15 +212,17 @@ export function resolveChromiumExtensionIds(options: {
     if (!t || !isChromiumExtensionId(t) || out.includes(t)) return;
     out.push(t);
   };
-  // Same Chromium ids for detour + overwire (in-place CWS upgrade).
-  for (const id of defaultChromiumExtensionIds(options.brand === 'overwire' ? 'detour' : (options.brand ?? 'detour')))
-    push(id);
+  // Same Chromium ids for former Detour + Overwire (in-place CWS upgrade).
+  for (const id of defaultChromiumExtensionIds(options.brand ?? 'overwire')) push(id);
   for (const id of options.extensionIds ?? []) push(id);
   push(options.extensionId);
   return out;
 }
 
-const FIREFOX_GECKO_ID = 'detour@protovoid.com';
+/** Current Overwire AMO / temporary-addon id. */
+const FIREFOX_GECKO_ID = 'overwire@protovoid.com';
+/** Pre-rebrand gecko id — keep in allowed_extensions for upgrade continuity. */
+const LEGACY_FIREFOX_GECKO_ID = 'detour@protovoid.com';
 
 /** Windows %LOCALAPPDATA% (or fallback under homedir). Relocated AppData must use the env var. */
 export function windowsLocalAppData(): string {
@@ -312,7 +314,7 @@ function firefoxManifest(hostName: string, hostPath: string): string {
       description: `Overwire database helper v${HOST_VERSION}`,
       path: hostPath,
       type: 'stdio',
-      allowed_extensions: [FIREFOX_GECKO_ID],
+      allowed_extensions: [FIREFOX_GECKO_ID, LEGACY_FIREFOX_GECKO_ID],
     },
     null,
     2,

@@ -31,11 +31,11 @@ Owned by the foundation agent. Do **not** `mv` parent folders or rename GitHub r
 - **l-cws-publish-runbook** actual CWS publish (document only)
 - Concept B/C logos; Rogers revival
 
-## Default brand (cutover done 2026-11-10)
+## Default brand (cutover done 2026-11-10; Detour flavor removed 2026-11-11)
 
 - Build-time `BRAND` / `DETOUR_BRAND` default is **`overwire`**.
-- Legacy Detour flavor: `BRAND=detour` → `extension/brands/detour/`.
-- Cutover gated on CWS Overwire listing submit + identifier follow-ups (A2) — both done.
+- Detour flavor directory deleted; `BRAND=detour` rejected (Overwire live on CWS).
+- Runtime legacy fallbacks for upgrade continuity remain (not a Detour brand build).
 - Do not revive Rogers / `zip:rogers`.
 
 ## Canonical naming map
@@ -105,7 +105,7 @@ Core MIT features stay free forever, local-only, account-free. Paid tiers via of
 - [x] `/support/` content
 - [x] protovoid.com product card → Overwire
 - [x] CWS listing **docs/runbook** + **0.1.3** Overwire zip — **Submitted for review** (Hamza, 2026-11-10)
-- [x] Default build brand cutover to `overwire` (2026-11-10; dual-brand zip DoD: default overwire + `BRAND=detour` legacy)
+- [x] Default build brand cutover to `overwire` (2026-11-10); Detour flavor removed + Overwire-only zip DoD (2026-11-11)
 - Changelog / release-notes / overwire-web `/changelog/` — **sibling owns** (do not edit from this stream)
 
 ### CWS publish runbook (Hamza dashboard — Submit DONE 2026-11-10)
@@ -138,7 +138,7 @@ Leave alone: git history rewrite; `chrome.storage` key `workspace`; stale `~/.cu
 
 - [x] Plan indexed; ADRs present with Last verified bumped
 - [x] `extension/brands/overwire/` builds (default unset `BRAND` → overwire zip)
-- [x] `BRAND=detour` still builds Detour flavor
+- [x] `BRAND=detour` rejected after Detour flavor removal (2026-11-11); Overwire zip only
 - [x] Web Bypass Arc SVGs replace Detour marks in `public/brand/` (+ favicon); OG noted or shipped
 - [x] No edits under sibling exclusive paths above
 - [x] Identifier neutralization (Wave 2 b-ext-identifiers, 2026-11-10)

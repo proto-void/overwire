@@ -30,14 +30,14 @@ Workbench (separate from RuleCompiler):
 | `observability` | Toolbar badge and session match log (no rule-body telemetry) | `extension/src/observability/` |
 | `distribution` | Store listing docs, permission rationale, CI and zip artifacts | `.github/workflows/ci.yml`, `docs/distribution/`, `extension/scripts/install-chrome.mjs` |
 | `api-client` | API Tester A–C: collections, send, scripts, dual-scope Apply Detour; runner/power; OAuth/SigV4/Digest, cookies, GraphQL/WS/SSE, visualizer, folder sync, capture | `extension/src/api-client/` + `ApiTester.svelte` + `ApiTesterPower.svelte` + `ApiTesterAdvanced.svelte` |
-| `db-client` | Databases workbench + JSON-RPC to brand `nativeHostName` (Detour default `com.detour.db`; Overwire target `com.overwire.db`) | `extension/src/db-client/` + `cli/src/db/` + `Databases.svelte` + `entrypoints/options/db/*` (A–D + plans 034–036 UX) |
-| Brand flavors | Build-time `DETOUR_BRAND` → `extension/brands/<slug>/` (committed: `detour`, `overwire`, `_template`) | `wxt.config.ts`, `virtual:brand-tokens`, `@wxt-dev/auto-icons` |
+| `db-client` | Databases workbench + JSON-RPC to brand `nativeHostName` (`com.overwire.db`; dual-register / fallback `com.detour.db`) | `extension/src/db-client/` + `cli/src/db/` + `Databases.svelte` + `entrypoints/options/db/*` (A–D + plans 034–036 UX) |
+| Brand pack | Build-time `BRAND` / `BRAND_DIR` → sole in-tree `extension/brands/overwire/` (+ `_template` for external) | `wxt.config.ts`, `brands/types.ts`, `virtual:brand-tokens`, `@wxt-dev/auto-icons` |
 | `licensing` | Offline Ed25519 OWPRO verify; LicenseBadge/Modal; MIT core ungated (Approved) | `extension/src/licensing/verify.ts` + `ui/LicenseBadge.svelte` + `ui/LicenseModal.svelte`; public key `LICENSE_VERIFY_PUBLIC_KEY` / `import.meta.env.LICENSE_VERIFY_PUBLIC_KEY`; Stripe webhook template `detour-web/workers/license-webhook/` |
 
 ## Databases helper (Slices A–D + Connection options + partner hooks, ADR-027/029/030)
 
 ```
-Databases tab → optional nativeMessaging → connectNative(brand.nativeHostName || 'com.detour.db')
+Databases tab → optional nativeMessaging → connectNative(brand.nativeHostName || 'com.overwire.db')
   → hello → { protocolVersion, hostVersion, capabilities[] } (mismatch UX; engine/SSH/proxy gated)
   → host JSON-RPC (chunk ≤ ~900 KB; cancel; idle / stdin-end exit; pickFile)
   → adapters: cassandra, postgres, mysql/mariadb, mssql, sqlite, oracle,
@@ -48,16 +48,17 @@ Databases tab → optional nativeMessaging → connectNative(brand.nativeHostNam
   → keychain secrets (kinds: password, :token, :sshKey, :sshPass, :sshKeyPass,
        :sslKeyPass, :proxyPass, :walletPass) + Amazon Root CA1 for Keyspaces
 Install (preferred): OS pack → double-click Install → SEA copies to per-user dir
-  macOS `~/Library/Application Support/Detour/db-host/`
-  Windows `%LOCALAPPDATA%\Detour\db-host\`
-  Linux `${XDG_DATA_HOME:-~/.local/share}/detour/db-host/`
+  macOS `~/Library/Application Support/Overwire/db-host/` (legacy Detour path still discovered)
+  Windows `%LOCALAPPDATA%\Overwire\db-host\`
+  Linux `${XDG_DATA_HOME:-~/.local/share}/overwire/db-host/`
   Manifest `path` = SEA binary; `allowed_origins` from stable public manifest `key` (ADR-029)
-Install (developers): `detour db install` / `uninstall` / `doctor` — Node launcher with absolute `process.execPath`
+Install (developers): `overwire db install` / `uninstall` / `doctor` — Node launcher with absolute `process.execPath`
+  (`detour` bin is a one-release shim → overwire)
 SEA: `cli/scripts/build-sea.mjs` (esbuild CJS + postject + official Node base + keyring beside binary);
   CI matrix windows-x64 / macos-arm64 / macos-x64 / linux-x64; `os-packs` + `v*` release assets
 Pack: `cli/scripts/pack-os.mjs` + `cli/pack/templates/`; store zips remain extension-only
-Compose: `docker-compose.db.yml` (+ profile `tls`) + `DETOUR_DB_E2E=1`; portable host via `DETOUR_DB_HOST_CMD`
-Brand build: `DETOUR_BRAND` and/or `DETOUR_BRAND_DIR` (absolute external brand tree, ADR-030)
+Compose: `docker-compose.db.yml` (+ profile `tls`) + `BRAND_DB_E2E=1` (`DETOUR_DB_E2E` alias); portable host via `BRAND_DB_HOST_CMD`
+Brand build: sole in-tree `overwire`; `BRAND_DIR` / `DETOUR_BRAND_DIR` for external trees (ADR-030)
 Connection form: declarative `fields.ts`; DbConnection v2 nested tls/ssh/proxy/advanced; environment tag `local` | `development` | `qa` | `staging` | `production` (`ENV_OPTIONS` lifecycle order Local→Development→QA→Staging→Production; production-only read-only default); Database type / Variant selects sorted A–Z by label
   TLS verify-full: CA / client cert / client key paths + Key passphrase → `:sslKeyPass`
 Workbench UX (plans 034–037): icon rail (Connections/Collections/History) + nested Object Explorer
@@ -213,16 +214,16 @@ DNR onRuleMatchedDebug (unpacked Chromium) or getMatchedRules (packed fallback)
 - Root package name: `overwire`
 - `extension/` — `@overwire/extension` (WXT, pnpm)
 - `cli/` — `@overwire/cli`, Node 24 type-stripping, no compile step. Root `pnpm-workspace.yaml` covers `extension/` and `cli/`
-- Bins: `overwire`, `overwire-db-host` (+ transition `detour` alias)
+- Bins: `overwire`, `overwire-db-host` (+ one-release `detour` shim)
 - Native host: `com.overwire.db` (install dual-registers legacy `com.detour.db`; keychain reads fall back)
 
-## Brand flavors (ADR-026 / ADR-031)
+## Brand pack (ADR-026 / ADR-031)
 
-- `BRAND` / `DETOUR_BRAND` (default `overwire`) loads `extension/brands/<slug>/` at build time; `BRAND_DIR` / `DETOUR_BRAND_DIR` for external trees; legacy flavor `BRAND=detour`
-- Default zip: `corepack pnpm --filter @overwire/extension zip` → `.output/detour/detour-<v>-chrome.zip`
-- Overwire flavor: `BRAND=overwire … zip` → `.output/overwire/overwire-<v>-chrome.zip`
+- Sole in-tree product brand: `extension/brands/overwire/` (+ `brands/types.ts` for `BrandConfig`). Detour flavor removed 2026-11-11 after CWS live.
+- `BRAND` / `DETOUR_BRAND` default `overwire`; `BRAND=detour` rejected; `BRAND_DIR` / `DETOUR_BRAND_DIR` for external trees only
+- Zip DoD: `corepack pnpm --filter @overwire/extension zip` → `.output/overwire/overwire-<v>-chrome.zip`
 - OS packs: `overwire-<ver>-<os>-<arch>.zip` via `@overwire/cli` `pack:os`
 - Partner Rogers product retired 2026-10-23 (plan 033); no `zip:rogers`, no private `rogers-detour`
-- UI tokens come from `brands/*/tokens.css` via `virtual:brand-tokens`; `ui/base.css` stays structural
+- UI tokens come from `brands/overwire/tokens.css` via `virtual:brand-tokens`; `ui/base.css` stays structural
 
-**Last verified:** 2026-11-10
+**Last verified:** 2026-11-11

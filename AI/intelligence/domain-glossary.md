@@ -1,6 +1,6 @@
 # Domain glossary
 
-**Last verified:** 2026-11-10 (licensing Approved + OWPRO keys; Overwire ADR-031)
+**Last verified:** 2026-11-11 (Detour brand flavor removed; Overwire-only build)
 
 | Term | Meaning |
 |------|---------|
@@ -21,12 +21,12 @@
 | **Recipe** | Built-in starter group (localhost / Vite, CORS headers, SPA fallback). It becomes a normal group; there is no separate recipe file |
 | **Rule tester** | Options-page UI: paste a URL (optional method, resource type, page) and see which rule wins, using engine precedence. Successor surface: **API Tester** ([api-client](../specs/api-client.md) Slice A Approved) |
 | **API Tester** | Options tab (rename from Tester): full-featured API client in-extension, no backend. Collections with folders (not “workspace”). Import/export Collection v2.1. Slices A+B+C Approved. `apiSettings.autosaveRequests` (missing=on) autosaves the active dirty request after ~1s idle — separate from rules `AUTOSAVE_KEY`. |
-| **Databases** | Options tab: DBeaver-class DB client via native-messaging helper (brand `nativeHostName`, default `com.detour.db`) ([db-client](../specs/db-client.md) Approved, ADR-027/030). Slices A–D + Connection options + `hello`/capabilities. Query collections with folders (not “workspace”) |
-| **detour-db / DB host** | Native messaging host (default `com.detour.db`) started by `connectNative`; `hello` handshake; multi-engine adapters; SSH/proxy tunnels; `pickFile`; secrets in OS keychain (memory fallback in tests); auto-exits when the port closes. Distinct from Local Bridge. Partner closed helpers may use another host name out of tree (ADR-030) |
+| **Databases** | Options tab: DBeaver-class DB client via native-messaging helper (brand `nativeHostName`, default `com.overwire.db`) ([db-client](../specs/db-client.md) Approved, ADR-027/030). Slices A–D + Connection options + `hello`/capabilities. Query collections with folders (not “workspace”) |
+| **DB host / overwire-db-host** | Native messaging host (`com.overwire.db`, dual-register/fallback `com.detour.db`) started by `connectNative`; `hello` handshake; multi-engine adapters; SSH/proxy tunnels; `pickFile`; secrets in OS keychain (memory fallback in tests); auto-exits when the port closes. Distinct from Local Bridge. Partner closed helpers may use another host name out of tree (ADR-030) |
 | **DbConnection v2** | Nested connection metadata (`tls`, `ssh`, `proxy`, `advanced`, `engineOptions`) with load-time migration from flat `tlsEnabled` / flat SSH |
 | **Query collection** | Saved DB (or API) queries in folders. Never called a “workspace” in UI copy |
-| **Overwire** | Current product name (ADR-031). Formerly **Detour**. Mark: Concept A Bypass Arc. Domain `overwire.protovoid.com`; brand pack `extension/brands/overwire/`; default build slug `overwire` (legacy `BRAND=detour`) |
-| **Detour** | Former product name / current default `DETOUR_BRAND` slug. Storage keys and Chromium extension ids stay for zero-loss upgrade |
+| **Overwire** | Current product name (ADR-031). Formerly **Detour**. Mark: Concept A Bypass Arc. Domain `overwire.protovoid.com`; sole brand pack `extension/brands/overwire/`; build slug `overwire` only |
+| **Detour** | Former product name. No in-tree brand flavor after 2026-11-11. Storage keys, Chromium ids, and runtime legacy fallbacks (`com.detour.db`, `detour:resync`, `detour-*` scripts, Detour export import) stay for zero-loss upgrade |
 | **Bypass Arc** | Official Overwire mark (LOCKED): orange override arc over dashed production wire landing on green terminal. Concepts B/C rejected |
 | **RO** | Resource Override ([kylepaulsen/ResourceOverride](https://github.com/kylepaulsen/ResourceOverride)) — upstream inspiration and legacy import format only; the product name is **Overwire** |
 | **OWPRO** | Offline Ed25519 license key prefix for Pro/Team (ADR-032); format `OWPRO.<base64url-payload>.<base64url-sig>`; WebCrypto verify offline in `extension/src/licensing/verify.ts`; no phone-home DB. Spec [licensing.md](../specs/licensing.md) **Approved**. MIT core stays ungated |

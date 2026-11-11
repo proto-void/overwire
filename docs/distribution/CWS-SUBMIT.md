@@ -26,7 +26,7 @@ Listing is already live (historically as **Detour**). This packet is the **Overw
 | **Support URL**        | [https://overwire.protovoid.com/support/](https://overwire.protovoid.com/support/) (Help & Community; see [support.md](support.md)) |
 | **Source**             | [https://github.com/proto-void/overwire](https://github.com/proto-void/overwire) (GitHub redirects from former `proto-void/detour`) |
 
-Fallback Detour-branded zip (same version, `BRAND=detour`): `extension/.output/detour/detour-0.1.3-chrome.zip`. Default unset `BRAND` now builds **Overwire**. The submitted rebrand package was the Overwire zip.
+Detour brand flavor removed (Overwire live on CWS). Sole zip: `extension/.output/overwire/overwire-0.1.3-chrome.zip`. `BRAND=detour` is rejected.
 
 **Package Title vs Store listing Title:** Uploading this zip makes Package “Title/Summary from package” show `**Overwire`** (`manifest.name` from `extension/brands/overwire`). The Store listing Title paste below (`Overwire — HTTP Override, Redirect & Mock`) is a separate dashboard field. To lengthen the *package* title, change `brand.name` and rebuild; do not expect the listing Title paste alone to change the package-derived title.
 

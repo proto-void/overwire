@@ -4,22 +4,23 @@ import { defineConfig } from 'vitest/config';
 import { WxtVitest } from 'wxt/testing/vitest-plugin';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const detourBrand = path.join(root, 'brands/detour');
+const overwireBrand = path.join(root, 'brands/overwire');
 
 export default defineConfig({
   plugins: [WxtVitest()],
   resolve: {
     alias: {
-      '@brand': detourBrand,
-      'virtual:brand-tokens': path.join(detourBrand, 'tokens.css'),
+      '@brand': overwireBrand,
+      'virtual:brand-tokens': path.join(overwireBrand, 'tokens.css'),
     },
   },
   define: {
     'import.meta.env.BRAND': JSON.stringify({
-      name: 'Detour',
-      shortName: 'Detour',
-      slug: 'detour',
+      name: 'Overwire',
+      shortName: 'Overwire',
+      slug: 'overwire',
       defaultTheme: 'dark',
+      nativeHostName: 'com.overwire.db',
     }),
     'import.meta.env.PARTNER_LOGO_URL': JSON.stringify(''),
     'import.meta.env.LICENSE_VERIFY_PUBLIC_KEY': JSON.stringify(''),
