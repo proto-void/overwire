@@ -4,7 +4,7 @@
 
 ## Session start
 
-1. `PRODUCT.md` — locked strategy (Detour: point production at your code)
+1. `PRODUCT.md` — locked strategy (Overwire: point production at your code)
 2. `PROGRESS.md` — done / next
 3. Matching `intelligence/*` / `research/*` before grepping code
 4. `specs/` — Draft until human Approves (`spec-workflow`)
